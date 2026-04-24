@@ -684,16 +684,6 @@ export default function DeliveryProfiles() {
             <div key={i} className="h-44 bg-gray-100 rounded-xl animate-pulse" />
           ))}
         </div>
-      ) : profiles.length === 0 ? (
-        <div className="text-center py-20">
-          <Mail className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 text-sm">No delivery profiles yet.</p>
-          <p className="text-gray-400 text-xs mt-1">Create your first profile to start sending metric reports.</p>
-          <button onClick={() => setModalOpen(true)}
-            className="mt-4 px-4 py-2 bg-[#10b981] text-white rounded-xl text-sm font-medium hover:bg-[#10b981]/90">
-            Create Profile
-          </button>
-        </div>
       ) : tab === 'shared' ? (
         sharedProfiles.length === 0 ? (
           <div className="text-center py-16 text-gray-400 text-sm">
@@ -717,6 +707,16 @@ export default function DeliveryProfiles() {
             ))}
           </div>
         )
+      ) : profiles.length === 0 ? (
+        <div className="text-center py-20">
+          <Mail className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500 text-sm">No delivery profiles yet.</p>
+          <p className="text-gray-400 text-xs mt-1">Create your first profile to start sending metric reports.</p>
+          <button onClick={() => setModalOpen(true)}
+            className="mt-4 px-4 py-2 bg-[#10b981] text-white rounded-xl text-sm font-medium hover:bg-[#10b981]/90">
+            Create Profile
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {profiles.map(profile => (
