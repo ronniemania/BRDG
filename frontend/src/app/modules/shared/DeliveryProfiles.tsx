@@ -29,6 +29,10 @@ interface DeliveryProfile {
   lastRunAt?: string | null;
   nextRunAt?: string | null;
   lastRunStatus?: string | null;
+  lastRunError?: string | null;
+  consecutiveFailures?: number;
+  paused?: boolean;
+  slackWebhookUrl?: string | null;
   createdAt: string;
 }
 
@@ -112,6 +116,8 @@ function ProfileModal({ initial, brandId, onSave, onClose, catalog, canShare }: 
   const [dateRange, setDateRange] = useState<'today' | 'yesterday' | 'last7' | 'last30' | 'mtd'>(initial?.dateRange ?? 'today');
   const [isShared, setIsShared] = useState<boolean>(!!initial?.isShared);
   const [mailProvider, setMailProvider] = useState<'auto' | 'outlook' | 'gmail'>(initial?.mailProvider ?? 'auto');
+  const [slackWebhookUrl, setSlackWebhookUrl] = useState<string>(initial?.slackWebhookUrl ?? '');
+  const [paused, setPaused] = useState<boolean>(!!initial?.paused);
 
   const [newEmail, setNewEmail] = useState('');
   const [newName, setNewName] = useState('');
@@ -145,6 +151,8 @@ function ProfileModal({ initial, brandId, onSave, onClose, catalog, canShare }: 
         emailSubject, emailTemplate,
         schedule, scheduleCron, scheduleHour, scheduleDow,
         dateRange, isShared, mailProvider,
+        slackWebhookUrl: slackWebhookUrl.trim() || null,
+        paused,
       };
       let result: DeliveryProfile;
       if (isEdit && initial?.id) {
@@ -375,6 +383,33 @@ function ProfileModal({ initial, brandId, onSave, onClose, catalog, canShare }: 
             )}
           </div>
 
+          {/* Slack webhook (optional — delivery goes alongside email) */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Slack webhook URL <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input value={slackWebhookUrl} onChange={e => setSlackWebhookUrl(e.target.value)}
+              placeholder="https://hooks.slack.com/services/..."
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#10b981]/30" />
+            <p className="text-[10px] text-gray-400 mt-1">When set, the report is posted to this Slack channel in addition to email recipients.</p>
+          </div>
+
+          {/* Paused toggle — visible when editing a dead-lettered profile */}
+          {initial?.paused && (
+            <div className="flex items-start gap-3 p-3 border border-amber-200 rounded-lg bg-amber-50">
+              <button onClick={() => setPaused(v => !v)}
+                className={`relative flex-shrink-0 w-10 h-5 rounded-full transition-colors mt-0.5 ${paused ? 'bg-amber-500' : 'bg-emerald-500'}`}>
+                <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${paused ? 'translate-x-0' : 'translate-x-5'}`} />
+              </button>
+              <div>
+                <p className="text-xs font-semibold text-gray-900">
+                  {paused ? 'Paused (auto-stopped after repeated failures)' : 'Resume schedule'}
+                </p>
+                <p className="text-[10px] text-gray-500 leading-relaxed">Toggle off to resume this schedule. The failure counter resets on save.</p>
+              </div>
+            </div>
+          )}
+
           {/* Mail provider */}
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Mail Provider</label>
@@ -462,7 +497,12 @@ function ProfileCard({ profile, catalog, readOnly, onEdit, onDelete, onSend, onP
               </span>
             )}
             {profile.lastRunStatus === 'failed' && (
-              <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-red-100 text-red-700">Last run failed</span>
+              <span title={profile.lastRunError || ''}
+                className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-red-100 text-red-700 cursor-help">Last run failed</span>
+            )}
+            {profile.paused && (
+              <span title={`Auto-paused after ${profile.consecutiveFailures ?? 3} failed runs — edit the profile to resume`}
+                className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-gray-200 text-gray-700 cursor-help">Paused</span>
             )}
           </div>
           {profile.description && (

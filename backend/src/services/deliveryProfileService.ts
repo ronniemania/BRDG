@@ -1,5 +1,6 @@
 import repository from '../database/repository';
 import { sendEmail } from './mailerService';
+import { sendToSlack } from './slackService';
 
 // ─── Available metric keys and their human-readable labels ───────────────────
 
@@ -229,21 +230,36 @@ export async function sendDeliveryProfile(
 
   const { html, subject } = await renderDeliveryProfilePreview(profileId);
   const recipients = (profile.recipients as Array<{ email: string; name?: string }>) || [];
+  const slackUrl = (profile as any).slackWebhookUrl as string | null;
 
   let sent = 0;
   let failed = 0;
   let providerUsed: string | null = null;
   const errors: string[] = [];
-  const preferred = ((profile as any).mailProvider || 'auto') as 'auto' | 'outlook' | 'gmail';
+  const preferred = ((profile as any).mailProvider || 'auto') as 'auto' | 'outlook' | 'gmail' | 'slack';
 
-  for (const r of recipients) {
+  // Slack delivery runs alongside email (not exclusive) — if a webhook is set we post there too.
+  if (slackUrl) {
+    try {
+      await sendToSlack(slackUrl, subject, html);
+      providerUsed = 'slack';
+      sent++;
+    } catch (err: any) {
+      failed++;
+      errors.push(`slack: ${err.message}`);
+    }
+  }
+
+  // 'slack'-only profiles skip the email loop entirely.
+  const emailRecipients = preferred === 'slack' ? [] : recipients;
+  for (const r of emailRecipients) {
     try {
       const result = await sendEmail({
         to: r.email,
         subject,
         html,
         senderUserId,
-        provider: preferred,
+        provider: preferred === 'slack' ? 'auto' : preferred,
       });
       providerUsed = result.provider;
       sent++;

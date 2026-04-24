@@ -17,15 +17,19 @@ import repository from '../database/repository';
 import { ValidationError, NotFoundError, ForbiddenError } from '../utils/errors';
 import { ADMIN_EMAILS } from '../config/constants';
 import { sendEmail } from '../services/mailerService';
+import { rateLimit } from '../utils/rateLimit';
+
+const testLimiter = rateLimit('mailbox-test', { capacity: 3, refillPerSec: 3 / 60 }); // 3 test sends / min / user
 
 async function requireAdmin(req: Request): Promise<string> {
   const userId = (req as AuthRequest).userId;
   if (!userId) throw new ForbiddenError('Not authenticated');
   const user = await repository.findUserById(userId);
-  const email = (user?.email || '').toLowerCase();
-  if (!email || !ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email)) {
-    throw new ForbiddenError('Admin access required');
-  }
+  if (!user) throw new ForbiddenError('Not authenticated');
+  const email = (user.email || '').toLowerCase();
+  const isAdminByRole = user.role === 'admin' || user.role === 'boss';
+  const isAdminByEmail = !!email && ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email);
+  if (!isAdminByRole && !isAdminByEmail) throw new ForbiddenError('Admin access required');
   return userId;
 }
 
@@ -212,7 +216,7 @@ export function setupMailboxRoutes(app: Express) {
   });
 
   // Test send — mails the connected address from itself
-  app.post('/api/mailboxes/:id/test', async (req: Request, res: Response) => {
+  app.post('/api/mailboxes/:id/test', testLimiter, async (req: Request, res: Response) => {
     try {
       const userId = await requireAdmin(req);
       const mb = await repository.findMailboxById(req.params.id);

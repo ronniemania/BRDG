@@ -13,6 +13,17 @@
 
 import repository from '../database/repository';
 import { sendDeliveryProfile } from './deliveryProfileService';
+import { log } from '../utils/logger';
+
+const SEND_TIMEOUT_MS = 30_000;
+const DEAD_LETTER_AFTER = 3;
+
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    p.then(v => { clearTimeout(t); resolve(v); }, e => { clearTimeout(t); reject(e); });
+  });
+}
 
 export interface ScheduleConfig {
   schedule: string;
@@ -101,17 +112,22 @@ export async function processDueScheduledReports(): Promise<void> {
   const due = await repository.findScheduledDueProfiles(now);
   if (!due.length) return;
 
-  console.log(`[ReportScheduler] ${due.length} scheduled report(s) due`);
+  log.info('scheduled reports due', { component: 'reportScheduler', count: due.length });
 
   for (const profile of due) {
+    if ((profile as any).paused) continue;
     try {
       const senderUserId = profile.createdBy || await pickAdminUserId();
       if (!senderUserId) {
-        console.warn(`[ReportScheduler] no sender user for profile ${profile.id} — skipping`);
+        log.warn('no sender user for profile — skipping', { component: 'reportScheduler', profileId: profile.id });
         continue;
       }
 
-      const result = await sendDeliveryProfile(profile.id, senderUserId);
+      const result = await withTimeout(
+        sendDeliveryProfile(profile.id, senderUserId),
+        SEND_TIMEOUT_MS,
+        `send profile=${profile.id}`,
+      );
 
       const next = computeNextRunAt({
         schedule: profile.schedule,
@@ -120,24 +136,42 @@ export async function processDueScheduledReports(): Promise<void> {
         scheduleDow: (profile as any).scheduleDow,
       }, new Date());
 
+      // Reset failure streak on any successful dispatch (even partial)
       await repository.updateDeliveryProfile(profile.id, {
         nextRunAt: next,
+        consecutiveFailures: 0,
+      } as any);
+      log.info('scheduled profile sent', {
+        component: 'reportScheduler',
+        profileId: profile.id,
+        sent: result.sent,
+        failed: result.failed,
+        next: next?.toISOString(),
       });
-      console.log(`[ReportScheduler] profile=${profile.id} sent=${result.sent} failed=${result.failed} next=${next?.toISOString()}`);
     } catch (err: any) {
-      console.error(`[ReportScheduler] profile=${profile.id} failed:`, err.message);
+      const streak = ((profile as any).consecutiveFailures ?? 0) + 1;
+      const shouldDeadLetter = streak >= DEAD_LETTER_AFTER;
+      log.error('scheduled profile failed', {
+        component: 'reportScheduler',
+        profileId: profile.id,
+        streak,
+        deadLettered: shouldDeadLetter,
+        err: err?.message,
+      });
       await repository.updateDeliveryProfile(profile.id, {
         lastRunAt: new Date(),
         lastRunStatus: 'failed',
         lastRunError: String(err.message).slice(0, 1000),
-        // Roll forward anyway to avoid a stuck schedule
-        nextRunAt: computeNextRunAt({
+        consecutiveFailures: streak,
+        paused: shouldDeadLetter,
+        // Roll forward anyway unless dead-lettered
+        nextRunAt: shouldDeadLetter ? null : computeNextRunAt({
           schedule: profile.schedule,
           scheduleCron: (profile as any).scheduleCron,
           scheduleHour: (profile as any).scheduleHour,
           scheduleDow: (profile as any).scheduleDow,
         }, new Date()),
-      });
+      } as any);
     }
   }
 }

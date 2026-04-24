@@ -6,6 +6,7 @@ import { PORT } from './config/constants';
 // Route imports
 import { setupHealthRoutes } from './routes/health';
 import { setupAuthRoutes } from './routes/auth';
+import { setupWebhookRoutes } from './routes/webhooks';
 import { setupAdminRoutes } from './routes/admin';
 import { setupBrandsRoutes } from './routes/brands';
 import { setupEcommerceRoutes } from './routes/ecommerce';
@@ -43,6 +44,7 @@ setupMiddleware(app);
 console.log('Registering routes...');
 setupHealthRoutes(app);
 setupAuthRoutes(app);
+setupWebhookRoutes(app); // public — HMAC-verified internally
 
 // Auth middleware — protects all routes below this line
 app.use(authMiddleware);

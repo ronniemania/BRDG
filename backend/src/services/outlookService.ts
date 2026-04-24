@@ -8,7 +8,7 @@
  * Credentials live in the MailboxConfig table so all admins share a single mailbox.
  */
 
-import repository from '../database/repository';
+import repository, { decryptMailboxSecrets } from '../database/repository';
 // nodemailer is optional — only required for the SMTP fallback path.
 // We load it lazily so the service compiles and runs without it.
 
@@ -31,7 +31,7 @@ export async function hasOutlookMailbox(): Promise<boolean> {
 }
 
 async function refreshOutlookToken(mailboxId: string): Promise<string> {
-  const mb = await repository.findMailboxById(mailboxId);
+  const mb = decryptMailboxSecrets(await repository.findMailboxById(mailboxId));
   if (!mb) throw new OutlookNotConnectedError();
 
   // Still valid?
@@ -128,7 +128,7 @@ async function sendViaSmtp(mb: any, to: string, subject: string, html: string): 
 }
 
 export async function sendEmailViaOutlook(to: string, subject: string, html: string): Promise<void> {
-  const mb = await repository.getDefaultMailbox('outlook');
+  const mb = decryptMailboxSecrets(await repository.getDefaultMailbox('outlook'));
   if (!mb) throw new OutlookNotConnectedError();
 
   // SMTP path is preferred when explicit SMTP creds are present (lets you connect a mailbox with just an app password)

@@ -488,6 +488,9 @@ model DeliveryProfile {
   nextRunAt     DateTime?
   lastRunStatus String?                      // "ok"|"failed"|"partial"
   lastRunError  String?   @db.Text
+  consecutiveFailures Int  @default(0)       // rolls back to 0 on success; dead-letter at 3
+  paused        Boolean   @default(false)    // true when dead-lettered; must be manually re-enabled
+  slackWebhookUrl String?                    // optional Slack incoming webhook for this profile
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

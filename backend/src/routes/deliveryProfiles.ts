@@ -9,10 +9,17 @@ import {
 } from '../services/deliveryProfileService';
 import { computeNextRunAt } from '../services/reportScheduler';
 import { ADMIN_EMAILS } from '../config/constants';
+import { rateLimit } from '../utils/rateLimit';
+
+const sendLimiter    = rateLimit('profile-send',    { capacity: 5,  refillPerSec: 5 / 60 });   // 5 sends / min / user
+const previewLimiter = rateLimit('profile-preview', { capacity: 20, refillPerSec: 20 / 60 });  // 20 previews / min / user
 
 async function isAdminUser(userId: string): Promise<boolean> {
   const user = await repository.findUserById(userId);
-  return !!user && ADMIN_EMAILS.map(e => e.toLowerCase()).includes((user.email || '').toLowerCase());
+  if (!user) return false;
+  // Either the DB role is admin/boss, OR the email is in the seed admin list.
+  if (user.role === 'admin' || user.role === 'boss') return true;
+  return ADMIN_EMAILS.map(e => e.toLowerCase()).includes((user.email || '').toLowerCase());
 }
 
 export function setupDeliveryProfileRoutes(app: Express) {
@@ -104,7 +111,7 @@ export function setupDeliveryProfileRoutes(app: Express) {
         brandId, name, description, profileType,
         metrics, recipients, emailSubject, emailTemplate,
         schedule, scheduleCron, scheduleHour, scheduleDow,
-        dateRange, isShared, mailProvider,
+        dateRange, isShared, mailProvider, slackWebhookUrl,
       } = req.body;
       if (!brandId || !name) throw new ValidationError('brandId and name are required');
       if (!await repository.canAccessBrand(brandId, userId)) throw new ForbiddenError();
@@ -139,6 +146,7 @@ export function setupDeliveryProfileRoutes(app: Express) {
         dateRange: dateRange ?? 'today',
         isShared: !!isShared,
         mailProvider: mailProvider ?? 'auto',
+        slackWebhookUrl: slackWebhookUrl ?? null,
         createdBy: userId,
         createdByEmail: user?.email ?? null,
         nextRunAt,
@@ -170,8 +178,13 @@ export function setupDeliveryProfileRoutes(app: Express) {
         'name', 'description', 'profileType', 'metrics', 'recipients',
         'emailSubject', 'emailTemplate', 'schedule', 'scheduleCron',
         'scheduleHour', 'scheduleDow', 'dateRange', 'isShared', 'mailProvider',
+        'slackWebhookUrl', 'paused',
       ];
       for (const k of keys) if (req.body[k] !== undefined) patch[k] = req.body[k];
+      // Resuming a dead-lettered profile: reset failure streak and reschedule.
+      if (req.body.paused === false && existing.paused) {
+        patch.consecutiveFailures = 0;
+      }
 
       // Recompute nextRunAt if scheduling changed
       if (patch.schedule || patch.scheduleCron !== undefined || patch.scheduleHour !== undefined || patch.scheduleDow !== undefined) {
@@ -209,7 +222,7 @@ export function setupDeliveryProfileRoutes(app: Express) {
   });
 
   // ── Preview (render HTML without sending) ──────────────────────────────────
-  app.get('/api/delivery-profiles/:id/preview', async (req: Request, res: Response) => {
+  app.get('/api/delivery-profiles/:id/preview', previewLimiter, async (req: Request, res: Response) => {
     try {
       const userId = (req as AuthRequest).userId!;
       const existing = await repository.findDeliveryProfile(req.params.id);
@@ -226,7 +239,7 @@ export function setupDeliveryProfileRoutes(app: Express) {
   });
 
   // ── Send now ───────────────────────────────────────────────────────────────
-  app.post('/api/delivery-profiles/:id/send', async (req: Request, res: Response) => {
+  app.post('/api/delivery-profiles/:id/send', sendLimiter, async (req: Request, res: Response) => {
     try {
       const userId = (req as AuthRequest).userId!;
       const existing = await repository.findDeliveryProfile(req.params.id);

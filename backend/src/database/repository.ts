@@ -764,11 +764,12 @@ async function createDeliveryProfile(data: {
   scheduleCron?: string | null; scheduleHour?: number; scheduleDow?: number;
   dateRange?: string; isShared?: boolean; createdBy?: string | null;
   createdByEmail?: string | null; mailProvider?: string;
-  nextRunAt?: Date | null;
+  nextRunAt?: Date | null; slackWebhookUrl?: string | null;
 }) {
   return prisma.deliveryProfile.create({ data });
 }
 
+// Accepts any valid DeliveryProfile field; narrowed by Prisma at runtime.
 async function updateDeliveryProfile(id: string, data: Partial<{
   name: string; description: string; profileType: string;
   metrics: Prisma.InputJsonValue; recipients: Prisma.InputJsonValue;
@@ -777,6 +778,7 @@ async function updateDeliveryProfile(id: string, data: Partial<{
   dateRange: string; isShared: boolean; mailProvider: string;
   lastSent: Date; lastRunAt: Date; nextRunAt: Date | null;
   lastRunStatus: string; lastRunError: string | null;
+  consecutiveFailures: number; paused: boolean; slackWebhookUrl: string | null;
 }>) {
   return prisma.deliveryProfile.update({ where: { id }, data });
 }
@@ -794,6 +796,7 @@ async function findScheduledDueProfiles(now: Date) {
     where: {
       schedule: { in: ['daily', 'weekly', 'custom'] },
       nextRunAt: { lte: now },
+      paused: false,
     },
   });
 }
@@ -826,11 +829,26 @@ async function upsertMailboxConfig(data: {
   smtpPassword?: string | null; smtpSecure?: boolean;
   createdById?: string | null; status?: string;
 }) {
+  const enc = { ...data };
+  // Encrypt sensitive fields at rest. decryptMailboxSecrets() reverses this on read.
+  if (typeof enc.accessToken === 'string' && enc.accessToken) enc.accessToken = encryptIfNeeded(enc.accessToken, ENCRYPTION_KEY);
+  if (typeof enc.refreshToken === 'string' && enc.refreshToken) enc.refreshToken = encryptIfNeeded(enc.refreshToken, ENCRYPTION_KEY);
+  if (typeof enc.smtpPassword === 'string' && enc.smtpPassword) enc.smtpPassword = encryptIfNeeded(enc.smtpPassword, ENCRYPTION_KEY);
   return prisma.mailboxConfig.upsert({
-    where: { provider_emailAddress: { provider: data.provider, emailAddress: data.emailAddress } },
-    update: { ...data },
-    create: { ...data } as any,
+    where: { provider_emailAddress: { provider: enc.provider, emailAddress: enc.emailAddress } },
+    update: { ...enc },
+    create: { ...enc } as any,
   });
+}
+
+/** Decrypt sensitive fields for in-process use. Never expose this output to clients. */
+export function decryptMailboxSecrets<T extends { accessToken?: string | null; refreshToken?: string | null; smtpPassword?: string | null } | null>(mb: T): T {
+  if (!mb) return mb;
+  const out: any = { ...mb };
+  if (out.accessToken) out.accessToken = decryptIfNeeded(out.accessToken, ENCRYPTION_KEY);
+  if (out.refreshToken) out.refreshToken = decryptIfNeeded(out.refreshToken, ENCRYPTION_KEY);
+  if (out.smtpPassword) out.smtpPassword = decryptIfNeeded(out.smtpPassword, ENCRYPTION_KEY);
+  return out;
 }
 
 async function updateMailboxConfig(id: string, data: Partial<{
@@ -841,7 +859,11 @@ async function updateMailboxConfig(id: string, data: Partial<{
   smtpPassword: string | null; smtpSecure: boolean;
   status: string; lastError: string | null;
 }>) {
-  return prisma.mailboxConfig.update({ where: { id }, data });
+  const enc: any = { ...data };
+  if (typeof enc.accessToken === 'string' && enc.accessToken) enc.accessToken = encryptIfNeeded(enc.accessToken, ENCRYPTION_KEY);
+  if (typeof enc.refreshToken === 'string' && enc.refreshToken) enc.refreshToken = encryptIfNeeded(enc.refreshToken, ENCRYPTION_KEY);
+  if (typeof enc.smtpPassword === 'string' && enc.smtpPassword) enc.smtpPassword = encryptIfNeeded(enc.smtpPassword, ENCRYPTION_KEY);
+  return prisma.mailboxConfig.update({ where: { id }, data: enc });
 }
 
 async function deleteMailboxConfig(id: string) {
