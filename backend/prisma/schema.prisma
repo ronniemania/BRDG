@@ -1,0 +1,746 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  password         String
+  firstName        String
+  lastName         String
+  role             String   @default("member")
+  status           String   @default("pending")
+  preferences      Json     @default("{}")
+  createdAt        DateTime @default(now())
+  lastLogin        DateTime?
+  refreshTokenHash String?
+
+  brands            Brand[]
+  auditLogs         AuditLog[]
+  oauthTokens       OAuthToken[]
+  brandMemberships  BrandMember[]
+  uploadedDataItems SharedDataItem[]
+
+  @@map("users")
+}
+
+model OAuthToken {
+  id           String   @id @default(cuid())
+  userId       String
+  provider     String   // 'google'
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  scopes       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, provider])
+  @@map("oauth_tokens")
+}
+
+model Brand {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  status    String   @default("active")
+  features  Json     @default("[]")
+  createdAt DateTime @default(now())
+
+  owner            User             @relation(fields: [ownerId], references: [id])
+  orders           Order[]
+  customers        Customer[]
+  shopifyStores    ShopifyStore[]
+  inventoryItems   InventoryItem[]
+  warehouses       Warehouse[]
+  dataSources      DataSource[]
+  freshdeskTickets FreshdeskTicket[]
+  reports          Report[]
+  returns          Return[]
+  syncLogs         SyncLog[]
+  alerts           Alert[]
+  members             BrandMember[]
+  sharedDataItems     SharedDataItem[]
+  fulfillmentOrders   FulfillmentOrder[]
+  fulfillmentSLA      FulfillmentSLAConfig?
+  breachLogs          BreachLog[]
+  rbacPolicies        RBACPolicy[]
+  deliveryProfiles    DeliveryProfile[]
+  adsAccounts         AdsAccount[]
+  actionLogs          ActionLog[]
+  agentDecisions      AgentDecision[]
+  brandStrategies     BrandStrategy[]
+  campaignBriefs      CampaignBrief[]
+  apiCostLogs         ApiCostLog[]
+  agentConfigs        AgentConfig[]
+
+  @@map("brands")
+}
+
+model AgentConfig {
+  id           String   @id @default(cuid())
+  brandId      String
+  agentKey     String
+  model        String   @default("claude-sonnet-4-6")
+  systemPrompt String   @db.Text
+  temperature  Float    @default(0.7)
+  maxTokens    Int      @default(4096)
+  enabled      Boolean  @default(true)
+  settings     Json     @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, agentKey])
+  @@index([brandId])
+  @@map("agent_configs")
+}
+
+model Order {
+  id              String    @id @default(cuid())
+  brandId         String
+  orderId         String
+  customerName    String
+  amount          Float
+  status            String    @default("pending")
+  internalStatus    String?
+  issueFlag         Boolean   @default(false)
+  issueFlagReason   String?
+  sourceSystem      String?
+  sourceOrderNumber String?
+  customerEmail     String?
+  customerPhone     String?
+  awbNumber         String?
+  grandTotal        Float?
+  shippingAddress   String?
+  orderDate         DateTime  @default(now())
+  dispatchDate      DateTime?
+  hoursToDispatch   Float?
+
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@unique([brandId, orderId])
+  @@map("orders")
+}
+
+model Customer {
+  id            String   @id @default(cuid())
+  brandId       String
+  name          String
+  email         String?
+  totalOrders   Int      @default(0)
+  totalSpent    Float    @default(0)
+  lastOrderDate DateTime?
+  createdAt     DateTime @default(now())
+
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@unique([brandId, email])
+  @@map("customers")
+}
+
+model ShopifyStore {
+  id          String   @id @default(cuid())
+  brandId     String
+  shopName    String
+  apiKey      String
+  apiPassword String
+  connectedAt DateTime @default(now())
+  syncStatus  String   @default("active")
+
+  brand          Brand            @relation(fields: [brandId], references: [id])
+  shopifyMetrics ShopifyMetrics[]
+
+  @@map("shopify_stores")
+}
+
+model ShopifyMetrics {
+  id           String   @id @default(cuid())
+  storeId      String
+  brandId      String
+  ordersCount  Int      @default(0)
+  totalRevenue Float    @default(0)
+  timestamp    DateTime @default(now())
+
+  store ShopifyStore @relation(fields: [storeId], references: [id])
+
+  @@map("shopify_metrics")
+}
+
+model Warehouse {
+  id            String @id @default(cuid())
+  brandId       String
+  name          String
+  location      String
+  totalCapacity Int    @default(0)
+  usedCapacity  Int    @default(0)
+
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@map("warehouses")
+}
+
+model InventoryItem {
+  id           String   @id @default(cuid())
+  brandId      String
+  sku          String
+  name         String
+  stockLevel   Int      @default(0)
+  reorderLevel Int      @default(10)
+  reorderPoint Int      @default(10)
+  category     String   @default("General")
+  costPrice    Float    @default(0)
+  salePrice    Float    @default(0)
+  maxStock     Int      @default(100)
+  status        String   @default("in_stock")
+  shopifyStatus String   @default("active")
+  binType            String   @default("sellable") // "sellable" | "damaged" | "expired"
+  trackedOnDashboard Boolean  @default(true)
+  warehouseId        String?
+  lastUpdated   DateTime @default(now())
+
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@unique([brandId, sku])
+  @@map("inventory_items")
+}
+
+model DataSource {
+  id          String   @id @default(cuid())
+  brandId     String
+  name        String
+  type        String
+  config      Json     @default("{}")
+  syncStatus  String   @default("pending")
+  recordCount Int      @default(0)
+  lastSync    DateTime?
+  lastError   String?
+  createdAt   DateTime @default(now())
+
+  brand    Brand     @relation(fields: [brandId], references: [id])
+  syncLogs SyncLog[]
+
+  @@map("data_sources")
+}
+
+model FreshdeskTicket {
+  id                String   @id @default(cuid())
+  brandId           String
+  subject           String
+  status            String   @default("open")
+  priority          String   @default("medium")
+  createdAt         DateTime @default(now())
+  responseTimeHours Float?
+  resolvedAt        DateTime?
+
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@map("freshdesk_tickets")
+}
+
+model Report {
+  id            String   @id @default(cuid())
+  brandId       String
+  name          String
+  type          String
+  config        Json     @default("{}")
+  createdAt     DateTime @default(now())
+  lastGenerated DateTime?
+
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@map("reports")
+}
+
+model Return {
+  id           String    @id @default(cuid())
+  brandId      String
+  orderId      String
+  customerName String
+  amount       Float     @default(0)
+  reason       String    @default("")
+  subReason    String    @default("")
+  status       String    @default("pending")
+  channel      String    @default("")
+  sku          String    @default("")
+  returnAction String    @default("")
+  createdAt    DateTime  @default(now())
+  returnDate   DateTime  @default(now())
+  resolvedAt   DateTime?
+
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@map("returns")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  resource  String
+  details   String
+  timestamp DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model SyncLog {
+  id           String   @id @default(cuid())
+  brandId      String
+  dataSourceId String
+  status       String
+  recordCount  Int      @default(0)
+  error        String?
+  syncedAt     DateTime @default(now())
+
+  brand      Brand      @relation(fields: [brandId], references: [id])
+  dataSource DataSource @relation(fields: [dataSourceId], references: [id])
+
+  @@map("sync_logs")
+}
+
+model SyncData {
+  id           String   @id @default(cuid())
+  brandId      String
+  dataSourceId String
+  data         Json
+  createdAt    DateTime @default(now())
+
+  @@map("sync_data")
+}
+
+model Alert {
+  id        String   @id @default(cuid())
+  brandId   String
+  type      String   // 'low_stock' | 'open_tickets' | 'high_returns' | 'pending_orders'
+  severity  String   @default("medium") // 'low' | 'medium' | 'high'
+  title     String
+  detail    String   @default("")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@map("alerts")
+}
+
+model DriveIngestedFile {
+  id           String   @id @default(cuid())
+  dataSourceId String
+  brandId      String
+  fileName     String
+  fileHash     String   // MD5 of file content — used to detect changes and re-ingest
+  recordCount  Int      @default(0)
+  status       String   @default("processed") // processed | error
+  error        String?
+  processedAt  DateTime @default(now())
+
+  @@unique([dataSourceId, fileName])
+  @@map("drive_ingested_files")
+}
+
+// ─── Fulfillment Pipeline ─────────────────────────────────────────────────────
+
+model FulfillmentOrder {
+  id                   String    @id @default(cuid())
+  brandId              String
+  orderId              String
+  orderTriggerAt       DateTime?
+  picklistGeneratedAt  DateTime?
+  picklistCompleteAt   DateTime?
+  moveToPacklistAt     DateTime?
+  awbGeneratedAt       DateTime?
+  connectedToCourierAt DateTime?
+  currentStep          Int       @default(0)  // 0–6
+  status               String    @default("pending") // pending | in_progress | completed | breach
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@unique([brandId, orderId])
+  @@map("fulfillment_orders")
+}
+
+model FulfillmentSLAConfig {
+  id        String @id @default(cuid())
+  brandId   String @unique
+  step1Mins Int    @default(30)   // orderTrigger → picklistGenerated
+  step2Mins Int    @default(60)   // picklistGenerated → picklistComplete
+  step3Mins Int    @default(15)   // picklistComplete → moveToPacklist
+  step4Mins Int    @default(30)   // moveToPacklist → awbGenerated
+  step5Mins Int    @default(15)   // awbGenerated → connectedToCourier
+
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@map("fulfillment_sla_config")
+}
+
+// ─── SLA Breach Log ───────────────────────────────────────────────────────────
+
+model BreachLog {
+  id          String   @id @default(cuid())
+  brandId     String
+  orderId     String
+  stepIndex   Int      // 1–5
+  stepName    String
+  elapsedMins Int
+  slaMins     Int
+  breachedAt  DateTime @default(now())
+
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@index([brandId])
+  @@index([brandId, stepIndex])
+  @@map("breach_logs")
+}
+
+// ─── Brand Membership ─────────────────────────────────────────────────────────
+
+model BrandMember {
+  id         String   @id @default(cuid())
+  brandId    String
+  userId     String
+  role       String   @default("member") // "owner" | "editor" | "viewer"
+  team       String?  // e.g. "sales" | "ops" | "marketing"
+  department String?  // e.g. "operations" | "finance" | "marketing"
+  joinedAt   DateTime @default(now())
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, userId])
+  @@map("brand_members")
+}
+
+// ─── Shared Data Feed ─────────────────────────────────────────────────────────
+
+model SharedDataItem {
+  id           String   @id @default(cuid())
+  brandId      String
+  uploadedById String
+  source       String   // "csv_upload" | "google_drive" | "shopify"
+  name         String
+  dataType     String   @default("unknown") // "orders" | "inventory" | "customers" | "returns" | "unknown" | "mixed"
+  recordCount  Int      @default(0)
+  status       String   @default("pending") // "pending" | "retained" | "archived" | "deleted"
+  dataSourceId String?
+  error        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  brand      Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  uploadedBy User  @relation(fields: [uploadedById], references: [id])
+
+  @@map("shared_data_items")
+}
+
+// ─── RBAC ─────────────────────────────────────────────────────────────────────
+
+model RBACPolicy {
+  id             String   @id @default(cuid())
+  brandId        String
+  name           String
+  team           String?
+  department     String?
+  allowedModules Json     @default("[]") // string[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@map("rbac_policies")
+}
+
+// ─── Delivery Profiles ────────────────────────────────────────────────────────
+
+model DeliveryProfile {
+  id            String    @id @default(cuid())
+  brandId       String
+  name          String
+  description   String    @default("")
+  profileType   String    @default("custom") // "ops" | "sales" | "custom"
+  metrics       Json      @default("[]")     // string[] of metric keys
+  recipients    Json      @default("[]")     // { email: string; name: string }[]
+  emailSubject  String    @default("Report")
+  emailTemplate String    @default("") @db.Text
+  schedule      String    @default("manual") // "manual" | "daily" | "weekly"
+  lastSent      DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@map("delivery_profiles")
+}
+
+// ─── Ads Engine ───────────────────────────────────────────────────────────────
+
+model AdsAccount {
+  id             String      @id @default(cuid())
+  brandId        String
+  platform       AdsPlatform
+  accountId      String
+  accountName    String
+  encryptedCreds String
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  brand      Brand          @relation(fields: [brandId], references: [id])
+  campaigns  Campaign[]
+  agentConfig AdsAgentConfig?
+
+  @@unique([brandId, platform, accountId])
+  @@map("ads_accounts")
+}
+
+model Campaign {
+  id               String         @id @default(cuid())
+  adsAccountId     String
+  externalId       String
+  platform         AdsPlatform
+  name             String
+  status           CampaignStatus
+  objective        String?
+  dailyBudgetCents Int?
+  startDate        DateTime?
+  endDate          DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  adsAccount AdsAccount          @relation(fields: [adsAccountId], references: [id])
+  adSets     AdSet[]
+  metrics    PerformanceMetric[]
+  decisions  AgentDecision[]
+
+  @@unique([adsAccountId, externalId])
+  @@map("campaigns")
+}
+
+model AdSet {
+  id               String         @id @default(cuid())
+  campaignId       String
+  externalId       String
+  name             String
+  status           CampaignStatus
+  dailyBudgetCents Int?
+  targetingJson    Json?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  campaign Campaign            @relation(fields: [campaignId], references: [id])
+  ads      Ad[]
+  metrics  PerformanceMetric[]
+
+  @@unique([campaignId, externalId])
+  @@map("ad_sets")
+}
+
+model Ad {
+  id           String         @id @default(cuid())
+  adSetId      String
+  externalId   String
+  name         String
+  status       CampaignStatus
+  headline     String?
+  body         String?
+  creativeJson Json?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  adSet   AdSet               @relation(fields: [adSetId], references: [id])
+  metrics PerformanceMetric[]
+
+  @@unique([adSetId, externalId])
+  @@map("ads")
+}
+
+model PerformanceMetric {
+  id                   String      @id @default(cuid())
+  campaignId           String?
+  adSetId              String?
+  adId                 String?
+  platform             AdsPlatform
+  dateKey              String
+  impressions          Int         @default(0)
+  clicks               Int         @default(0)
+  spendCents           Int         @default(0)
+  conversions          Int         @default(0)
+  conversionValueCents Int         @default(0)
+  ctr                  Decimal     @db.Decimal(8, 5)
+  cpc                  Decimal     @db.Decimal(10, 2)
+  cpa                  Decimal     @db.Decimal(10, 2)
+  roas                 Decimal     @db.Decimal(8, 4)
+  frequencyScore       Decimal?    @db.Decimal(6, 3)
+  rawJson              Json?
+  fetchedAt            DateTime    @default(now())
+
+  campaign Campaign? @relation(fields: [campaignId], references: [id])
+  adSet    AdSet?    @relation(fields: [adSetId], references: [id])
+  ad       Ad?       @relation(fields: [adId], references: [id])
+
+  @@unique([campaignId, dateKey])
+  @@index([adSetId, dateKey])
+  @@index([adId, dateKey])
+  @@map("performance_metrics")
+}
+
+model ActionLog {
+  id            String       @id @default(cuid())
+  brandId       String
+  agentId       String
+  workflowRunId String?
+  action        String
+  entityType    String
+  entityId      String
+  externalId    String?
+  platform      AdsPlatform
+  reason        String
+  beforeState   Json
+  afterState    Json?
+  status        ActionStatus @default(PENDING)
+  errorMessage  String?
+  executedAt    DateTime?
+  createdAt     DateTime     @default(now())
+
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@index([brandId, createdAt])
+  @@index([workflowRunId])
+  @@map("action_logs")
+}
+
+model AgentDecision {
+  id                String   @id @default(cuid())
+  brandId           String
+  campaignId        String?
+  workflowRunId     String
+  agentId           String
+  inputJson         Json
+  approvedActions   Json
+  rejectedActions   Json
+  humanQueue        Json
+  confidence        Decimal  @db.Decimal(5, 4)
+  guardrailsApplied Json
+  createdAt         DateTime @default(now())
+
+  brand    Brand     @relation(fields: [brandId], references: [id])
+  campaign Campaign? @relation(fields: [campaignId], references: [id])
+
+  @@index([brandId, createdAt])
+  @@index([workflowRunId])
+  @@map("agent_decisions")
+}
+
+model AdsAgentConfig {
+  id                     String   @id @default(cuid())
+  adsAccountId           String   @unique
+  manualApprovalMode     Boolean  @default(false)
+  confidenceThreshold    Decimal  @default(0.75) @db.Decimal(4, 3)
+  maxDailyBudgetIncrPct  Int      @default(20)
+  minSpendThresholdCents Int      @default(5000)
+  cooldownHours          Int      @default(24)
+  allowedActions         Json
+  blockedCampaignIds     Json     @default("[]")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  adsAccount AdsAccount @relation(fields: [adsAccountId], references: [id])
+
+  @@map("ads_agent_configs")
+}
+
+enum AdsPlatform {
+  META
+  GOOGLE
+}
+
+enum CampaignStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+  DELETED
+  PENDING
+}
+
+enum ActionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXECUTED
+  FAILED
+  AWAITING_HUMAN
+}
+
+// ─── Clawbot ─────────────────────────────────────────────────────────────────
+
+model BrandStrategy {
+  id            String   @id @default(cuid())
+  brandId       String
+  version       Int      @default(1)
+  title         String
+  objective     String   @db.Text
+  targetAudience Json    // { segments: string[], primaryPersona: string, ageRange: string, interests: string[] }
+  budgetRec     Json    // { total: number, metaPct: number, googlePct: number, rationale: string }
+  channels      Json    // { primary: string, secondary: string[], rationale: string }
+  keyMessages   Json    // string[]
+  kpis          Json    // { primary: string, targets: Record<string,string> }
+  rawInput      Json    // the brand data the user submitted
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  brand         Brand    @relation(fields: [brandId], references: [id])
+  campaigns     CampaignBrief[]
+
+  @@map("brand_strategies")
+}
+
+model CampaignBrief {
+  id              String   @id @default(cuid())
+  brandId         String
+  strategyId      String?
+  name            String
+  platform        AdsPlatform
+  objective       String
+  budget          Decimal  @db.Decimal(10, 2)
+  startDate       DateTime?
+  endDate         DateTime?
+  targetAudience  Json
+  creativeDirection Json   // { headline: string, primaryText: string, description: string, tone: string }
+  status          String   @default("DRAFT") // DRAFT | READY | LAUNCHED | COMPLETED
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  brand    Brand         @relation(fields: [brandId], references: [id])
+  strategy BrandStrategy? @relation(fields: [strategyId], references: [id])
+
+  @@map("campaign_briefs")
+}
+
+model ApiCostLog {
+  id           String   @id @default(cuid())
+  brandId      String?
+  provider     String   // anthropic | openai | perplexity
+  model        String
+  operation    String   // recommendations | copy-variants | strategy | orchestrate
+  inputTokens  Int
+  outputTokens Int
+  costUsd      Decimal  @db.Decimal(10, 6)
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  brand Brand? @relation(fields: [brandId], references: [id])
+
+  @@map("api_cost_logs")
+}
