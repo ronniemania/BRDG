@@ -2,14 +2,79 @@ import { Express, Request, Response } from 'express';
 import { AuthRequest } from '../config/authMiddleware';
 import repository from '../database/repository';
 import { ValidationError, NotFoundError, ForbiddenError } from '../utils/errors';
-import { sendDeliveryProfile } from '../services/deliveryProfileService';
+import {
+  sendDeliveryProfile,
+  renderDeliveryProfilePreview,
+  getMetricCatalog,
+} from '../services/deliveryProfileService';
+import { computeNextRunAt } from '../services/reportScheduler';
+import { ADMIN_EMAILS } from '../config/constants';
+
+async function isAdminUser(userId: string): Promise<boolean> {
+  const user = await repository.findUserById(userId);
+  return !!user && ADMIN_EMAILS.map(e => e.toLowerCase()).includes((user.email || '').toLowerCase());
+}
 
 export function setupDeliveryProfileRoutes(app: Express) {
-  // ─── CRUD ─────────────────────────────────────────────────────────────────────
 
-  /**
-   * GET /api/delivery-profiles?brandId=
-   */
+  // ── Metric catalog (static reference for UI) ────────────────────────────────
+  app.get('/api/delivery-profiles/metrics', (_req: Request, res: Response) => {
+    res.json({ metrics: getMetricCatalog() });
+  });
+
+  // ── Shared templates (visible to all admins across brands) ──────────────────
+  app.get('/api/delivery-profiles/shared', async (req: Request, res: Response) => {
+    try {
+      const userId = (req as AuthRequest).userId!;
+      if (!await isAdminUser(userId)) throw new ForbiddenError('Admin access required');
+      const profiles = await repository.findSharedDeliveryProfiles();
+      res.json({ profiles });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ message: err.message });
+    }
+  });
+
+  // ── Clone a profile into a target brand ─────────────────────────────────────
+  app.post('/api/delivery-profiles/:id/clone', async (req: Request, res: Response) => {
+    try {
+      const userId = (req as AuthRequest).userId!;
+      const source = await repository.findDeliveryProfile(req.params.id);
+      if (!source) throw new NotFoundError('Source profile not found');
+
+      const targetBrandId: string = req.body.brandId || source.brandId;
+      if (!await repository.canAccessBrand(targetBrandId, userId)) throw new ForbiddenError();
+      // Source must be either accessible or shared
+      const sourceAccessible = await repository.canAccessBrand(source.brandId, userId);
+      if (!sourceAccessible && !source.isShared) throw new ForbiddenError();
+
+      const user = await repository.findUserById(userId);
+      const cloned = await repository.createDeliveryProfile({
+        brandId: targetBrandId,
+        name: `${source.name} (copy)`,
+        description: source.description,
+        profileType: source.profileType,
+        metrics: source.metrics as any,
+        recipients: source.recipients as any,
+        emailSubject: source.emailSubject,
+        emailTemplate: source.emailTemplate,
+        schedule: source.schedule,
+        scheduleCron: (source as any).scheduleCron ?? null,
+        scheduleHour: (source as any).scheduleHour ?? 7,
+        scheduleDow: (source as any).scheduleDow ?? 1,
+        dateRange: (source as any).dateRange ?? 'today',
+        isShared: false,
+        mailProvider: (source as any).mailProvider ?? 'auto',
+        createdBy: userId,
+        createdByEmail: user?.email ?? null,
+        nextRunAt: null,
+      });
+      res.status(201).json({ profile: cloned });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ message: err.message });
+    }
+  });
+
+  // ── List profiles for a brand (includes shared admin templates) ────────────
   app.get('/api/delivery-profiles', async (req: Request, res: Response) => {
     try {
       const userId = (req as AuthRequest).userId!;
@@ -17,25 +82,46 @@ export function setupDeliveryProfileRoutes(app: Express) {
       if (!brandId) throw new ValidationError('brandId is required');
       if (!await repository.canAccessBrand(brandId, userId)) throw new ForbiddenError();
 
-      const profiles = await repository.findDeliveryProfiles(brandId);
-      res.json({ profiles });
+      const [own, shared] = await Promise.all([
+        repository.findDeliveryProfiles(brandId),
+        isAdminUser(userId).then(isA => isA ? repository.findSharedDeliveryProfiles() : []),
+      ]);
+
+      const ownIds = new Set(own.map(p => p.id));
+      const sharedExtras = shared.filter(p => !ownIds.has(p.id) && p.brandId !== brandId);
+
+      res.json({ profiles: own, sharedProfiles: sharedExtras });
     } catch (err: any) {
       res.status(err.status || 500).json({ message: err.message });
     }
   });
 
-  /**
-   * POST /api/delivery-profiles
-   */
+  // ── Create ─────────────────────────────────────────────────────────────────
   app.post('/api/delivery-profiles', async (req: Request, res: Response) => {
     try {
       const userId = (req as AuthRequest).userId!;
       const {
         brandId, name, description, profileType,
-        metrics, recipients, emailSubject, emailTemplate, schedule,
+        metrics, recipients, emailSubject, emailTemplate,
+        schedule, scheduleCron, scheduleHour, scheduleDow,
+        dateRange, isShared, mailProvider,
       } = req.body;
       if (!brandId || !name) throw new ValidationError('brandId and name are required');
       if (!await repository.canAccessBrand(brandId, userId)) throw new ForbiddenError();
+
+      // isShared requires admin
+      if (isShared && !await isAdminUser(userId)) {
+        throw new ForbiddenError('Only admins can create shared templates');
+      }
+
+      const user = await repository.findUserById(userId);
+      const scheduleType = schedule ?? 'manual';
+      const nextRunAt = scheduleType === 'manual' ? null : computeNextRunAt({
+        schedule: scheduleType,
+        scheduleCron,
+        scheduleHour: scheduleHour ?? 7,
+        scheduleDow: scheduleDow ?? 1,
+      });
 
       const profile = await repository.createDeliveryProfile({
         brandId,
@@ -46,7 +132,16 @@ export function setupDeliveryProfileRoutes(app: Express) {
         recipients: Array.isArray(recipients) ? recipients : [],
         emailSubject: emailSubject ?? 'Report',
         emailTemplate: emailTemplate ?? '',
-        schedule: schedule ?? 'manual',
+        schedule: scheduleType,
+        scheduleCron: scheduleCron ?? null,
+        scheduleHour: scheduleHour ?? 7,
+        scheduleDow: scheduleDow ?? 1,
+        dateRange: dateRange ?? 'today',
+        isShared: !!isShared,
+        mailProvider: mailProvider ?? 'auto',
+        createdBy: userId,
+        createdByEmail: user?.email ?? null,
+        nextRunAt,
       });
       res.status(201).json({ profile });
     } catch (err: any) {
@@ -54,46 +149,57 @@ export function setupDeliveryProfileRoutes(app: Express) {
     }
   });
 
-  /**
-   * PATCH /api/delivery-profiles/:id
-   */
+  // ── Patch ──────────────────────────────────────────────────────────────────
   app.patch('/api/delivery-profiles/:id', async (req: Request, res: Response) => {
     try {
       const userId = (req as AuthRequest).userId!;
       const existing = await repository.findDeliveryProfile(req.params.id);
       if (!existing) throw new NotFoundError('Delivery profile not found');
-      if (!await repository.canAccessBrand(existing.brandId, userId)) throw new ForbiddenError();
 
-      const {
-        name, description, profileType,
-        metrics, recipients, emailSubject, emailTemplate, schedule,
-      } = req.body;
+      const isAdmin = await isAdminUser(userId);
+      const canAccess = await repository.canAccessBrand(existing.brandId, userId);
+      // Admins can edit any profile (shared or not); others only their brand's
+      if (!canAccess && !isAdmin) throw new ForbiddenError();
 
-      const updated = await repository.updateDeliveryProfile(req.params.id, {
-        ...(name !== undefined && { name }),
-        ...(description !== undefined && { description }),
-        ...(profileType !== undefined && { profileType }),
-        ...(metrics !== undefined && { metrics }),
-        ...(recipients !== undefined && { recipients }),
-        ...(emailSubject !== undefined && { emailSubject }),
-        ...(emailTemplate !== undefined && { emailTemplate }),
-        ...(schedule !== undefined && { schedule }),
-      });
+      if (req.body.isShared !== undefined && req.body.isShared !== existing.isShared && !isAdmin) {
+        throw new ForbiddenError('Only admins can toggle shared templates');
+      }
+
+      const patch: any = {};
+      const keys = [
+        'name', 'description', 'profileType', 'metrics', 'recipients',
+        'emailSubject', 'emailTemplate', 'schedule', 'scheduleCron',
+        'scheduleHour', 'scheduleDow', 'dateRange', 'isShared', 'mailProvider',
+      ];
+      for (const k of keys) if (req.body[k] !== undefined) patch[k] = req.body[k];
+
+      // Recompute nextRunAt if scheduling changed
+      if (patch.schedule || patch.scheduleCron !== undefined || patch.scheduleHour !== undefined || patch.scheduleDow !== undefined) {
+        const effective = { ...existing, ...patch };
+        patch.nextRunAt = effective.schedule === 'manual' ? null : computeNextRunAt({
+          schedule: effective.schedule,
+          scheduleCron: effective.scheduleCron,
+          scheduleHour: effective.scheduleHour ?? 7,
+          scheduleDow: effective.scheduleDow ?? 1,
+        });
+      }
+
+      const updated = await repository.updateDeliveryProfile(req.params.id, patch);
       res.json({ profile: updated });
     } catch (err: any) {
       res.status(err.status || 500).json({ message: err.message });
     }
   });
 
-  /**
-   * DELETE /api/delivery-profiles/:id
-   */
+  // ── Delete ─────────────────────────────────────────────────────────────────
   app.delete('/api/delivery-profiles/:id', async (req: Request, res: Response) => {
     try {
       const userId = (req as AuthRequest).userId!;
       const existing = await repository.findDeliveryProfile(req.params.id);
       if (!existing) throw new NotFoundError('Delivery profile not found');
-      if (!await repository.canAccessBrand(existing.brandId, userId)) throw new ForbiddenError();
+      const isAdmin = await isAdminUser(userId);
+      const canAccess = await repository.canAccessBrand(existing.brandId, userId);
+      if (!canAccess && !isAdmin) throw new ForbiddenError();
 
       await repository.deleteDeliveryProfile(req.params.id);
       res.json({ message: 'Delivery profile deleted' });
@@ -102,18 +208,32 @@ export function setupDeliveryProfileRoutes(app: Express) {
     }
   });
 
-  // ─── Send ─────────────────────────────────────────────────────────────────────
+  // ── Preview (render HTML without sending) ──────────────────────────────────
+  app.get('/api/delivery-profiles/:id/preview', async (req: Request, res: Response) => {
+    try {
+      const userId = (req as AuthRequest).userId!;
+      const existing = await repository.findDeliveryProfile(req.params.id);
+      if (!existing) throw new NotFoundError('Delivery profile not found');
+      const isAdmin = await isAdminUser(userId);
+      const canAccess = await repository.canAccessBrand(existing.brandId, userId);
+      if (!canAccess && !(existing.isShared && isAdmin)) throw new ForbiddenError();
 
-  /**
-   * POST /api/delivery-profiles/:id/send
-   * Fetches current brand metrics, renders the email template, and sends to all recipients.
-   */
+      const preview = await renderDeliveryProfilePreview(req.params.id);
+      res.json(preview);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ message: err.message });
+    }
+  });
+
+  // ── Send now ───────────────────────────────────────────────────────────────
   app.post('/api/delivery-profiles/:id/send', async (req: Request, res: Response) => {
     try {
       const userId = (req as AuthRequest).userId!;
       const existing = await repository.findDeliveryProfile(req.params.id);
       if (!existing) throw new NotFoundError('Delivery profile not found');
-      if (!await repository.canAccessBrand(existing.brandId, userId)) throw new ForbiddenError();
+      const isAdmin = await isAdminUser(userId);
+      const canAccess = await repository.canAccessBrand(existing.brandId, userId);
+      if (!canAccess && !(existing.isShared && isAdmin)) throw new ForbiddenError();
 
       const result = await sendDeliveryProfile(req.params.id, userId);
       res.json(result);

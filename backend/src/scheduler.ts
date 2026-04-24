@@ -2,7 +2,8 @@ import { AUTO_SYNC_INTERVAL, DEFAULT_GDRIVE_FOLDER } from './config/constants';
 import { initAdsScheduler } from './schedulers/adsScheduler';
 import { syncDriveFolder } from './services/driveFolderService';
 import { ShopifyService } from './services/shopifyService';
-import { sendEmailViaGmail } from './services/gmailService';
+import { sendEmail } from './services/mailerService';
+import { processDueScheduledReports } from './services/reportScheduler';
 import repository from './database/repository';
 
 const shopifyService = new ShopifyService();
@@ -292,7 +293,13 @@ async function runEodEmail(): Promise<void> {
           date: now.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
         });
 
-        await sendEmailViaGmail(user.id, user.email, `BRDG Daily Summary — ${now.toLocaleDateString('en-IN')}`, html);
+        await sendEmail({
+          to: user.email,
+          subject: `BRDG Daily Summary — ${now.toLocaleDateString('en-IN')}`,
+          html,
+          senderUserId: user.id,
+          provider: 'auto',
+        });
         console.log(`[Scheduler] EOD email sent to ${user.email}`);
       } catch (err: any) {
         console.error(`[Scheduler] EOD email failed for ${user.email}:`, err.message);
@@ -403,9 +410,6 @@ async function runSyncCycle() {
     await runBreachEvaluation(brand.id);
   }
 
-  // Check if it's time to send EOD emails (runs on every cycle, but self-throttles)
-  await runEodEmail();
-
   console.log(`[Scheduler] Sync cycle completed at ${new Date().toISOString()}`);
 }
 
@@ -449,6 +453,14 @@ export function startScheduler() {
 
   // Ads management cron jobs (daily optimization + stale queue alerts)
   initAdsScheduler();
+
+  // Minute tick — EOD email window + scheduled reports dispatch
+  setInterval(() => {
+    runEodEmail().catch(err => console.error('[Scheduler] EOD tick failed:', err.message));
+    processDueScheduledReports().catch(err =>
+      console.error('[Scheduler] Scheduled reports tick failed:', err.message),
+    );
+  }, 60 * 1000);
 }
 
 export function stopScheduler() {

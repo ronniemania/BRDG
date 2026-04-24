@@ -761,6 +761,10 @@ async function createDeliveryProfile(data: {
   brandId: string; name: string; description?: string; profileType?: string;
   metrics?: Prisma.InputJsonValue; recipients?: Prisma.InputJsonValue;
   emailSubject?: string; emailTemplate?: string; schedule?: string;
+  scheduleCron?: string | null; scheduleHour?: number; scheduleDow?: number;
+  dateRange?: string; isShared?: boolean; createdBy?: string | null;
+  createdByEmail?: string | null; mailProvider?: string;
+  nextRunAt?: Date | null;
 }) {
   return prisma.deliveryProfile.create({ data });
 }
@@ -768,13 +772,80 @@ async function createDeliveryProfile(data: {
 async function updateDeliveryProfile(id: string, data: Partial<{
   name: string; description: string; profileType: string;
   metrics: Prisma.InputJsonValue; recipients: Prisma.InputJsonValue;
-  emailSubject: string; emailTemplate: string; schedule: string; lastSent: Date;
+  emailSubject: string; emailTemplate: string; schedule: string;
+  scheduleCron: string | null; scheduleHour: number; scheduleDow: number;
+  dateRange: string; isShared: boolean; mailProvider: string;
+  lastSent: Date; lastRunAt: Date; nextRunAt: Date | null;
+  lastRunStatus: string; lastRunError: string | null;
 }>) {
   return prisma.deliveryProfile.update({ where: { id }, data });
 }
 
 async function deleteDeliveryProfile(id: string) {
   return prisma.deliveryProfile.delete({ where: { id } });
+}
+
+async function findSharedDeliveryProfiles() {
+  return prisma.deliveryProfile.findMany({ where: { isShared: true }, orderBy: { createdAt: 'desc' } });
+}
+
+async function findScheduledDueProfiles(now: Date) {
+  return prisma.deliveryProfile.findMany({
+    where: {
+      schedule: { in: ['daily', 'weekly', 'custom'] },
+      nextRunAt: { lte: now },
+    },
+  });
+}
+
+// ─── Mailbox Configs ─────────────────────────────────────────────────────────
+
+async function listMailboxConfigs() {
+  return prisma.mailboxConfig.findMany({ orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }] });
+}
+
+async function getDefaultMailbox(provider?: string) {
+  const where: any = { status: 'connected' };
+  if (provider) where.provider = provider;
+  // Prefer explicit default, then most-recent-connected
+  const def = await prisma.mailboxConfig.findFirst({ where: { ...where, isDefault: true } });
+  if (def) return def;
+  return prisma.mailboxConfig.findFirst({ where, orderBy: { updatedAt: 'desc' } });
+}
+
+async function findMailboxById(id: string) {
+  return prisma.mailboxConfig.findUnique({ where: { id } });
+}
+
+async function upsertMailboxConfig(data: {
+  provider: string; emailAddress: string;
+  displayName?: string; isDefault?: boolean; isShared?: boolean;
+  accessToken?: string | null; refreshToken?: string | null;
+  expiresAt?: Date | null; tenantId?: string | null; scopes?: string | null;
+  smtpHost?: string | null; smtpPort?: number | null; smtpUser?: string | null;
+  smtpPassword?: string | null; smtpSecure?: boolean;
+  createdById?: string | null; status?: string;
+}) {
+  return prisma.mailboxConfig.upsert({
+    where: { provider_emailAddress: { provider: data.provider, emailAddress: data.emailAddress } },
+    update: { ...data },
+    create: { ...data } as any,
+  });
+}
+
+async function updateMailboxConfig(id: string, data: Partial<{
+  displayName: string; isDefault: boolean; isShared: boolean;
+  accessToken: string | null; refreshToken: string | null;
+  expiresAt: Date | null; tenantId: string | null; scopes: string | null;
+  smtpHost: string | null; smtpPort: number | null; smtpUser: string | null;
+  smtpPassword: string | null; smtpSecure: boolean;
+  status: string; lastError: string | null;
+}>) {
+  return prisma.mailboxConfig.update({ where: { id }, data });
+}
+
+async function deleteMailboxConfig(id: string) {
+  return prisma.mailboxConfig.delete({ where: { id } });
 }
 
 // ─── Marketing Metrics (raw table — snake_case columns, not Prisma-managed) ──
@@ -868,6 +939,9 @@ const repository = {
   updateBrandMemberAttributes,
   // Delivery Profiles
   findDeliveryProfiles, findDeliveryProfile, createDeliveryProfile, updateDeliveryProfile, deleteDeliveryProfile,
+  findSharedDeliveryProfiles, findScheduledDueProfiles,
+  // Mailbox Configs
+  listMailboxConfigs, getDefaultMailbox, findMailboxById, upsertMailboxConfig, updateMailboxConfig, deleteMailboxConfig,
   // Prisma instance (for advanced queries)
   prisma,
 };

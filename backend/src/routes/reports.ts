@@ -1,7 +1,7 @@
 import { Express, Request, Response } from 'express';
 import repository from '../database/repository';
 import { ValidationError, NotFoundError, ForbiddenError } from '../utils/errors';
-import { sendEmailViaGmail } from '../services/gmailService';
+import { sendEmail } from '../services/mailerService';
 
 async function getBrandId(req: Request): Promise<string> {
   const brandId = req.query.brandId as string;
@@ -252,17 +252,39 @@ export function setupReportsRoutes(app: Express) {
           };
           break;
         }
-        default: data = {};
+        default: {
+          // Custom or unknown type — roll up a business snapshot so the email is never empty
+          const [orders, customers, inventory, returns] = await Promise.all([
+            repository.findOrdersByBrand(report.brandId, filters),
+            repository.findCustomersByBrand(report.brandId, {}),
+            repository.findInventoryByBrand(report.brandId, { trackedOnDashboard: true }),
+            repository.findReturnsByBrand(report.brandId, filters),
+          ]);
+          const totalRevenue = orders.reduce((s, o) => s + o.amount, 0);
+          data = {
+            totalRevenue,
+            totalOrders: orders.length,
+            totalCustomers: customers.length,
+            totalReturns: returns.length,
+            lowStockSkus: inventory.filter(i => i.stockLevel <= i.reorderPoint).length,
+          };
+        }
       }
 
       const html = buildReportHTML(report.name, brand?.name ?? 'Brand', report.type, data, filters);
       const subject = `Report: ${report.name} — ${brand?.name ?? ''}`;
 
-      // Send to each recipient (uses the boss's Gmail OAuth)
+      // Send to each recipient (auto-routes to Outlook if connected, else Gmail)
       const failures: string[] = [];
       for (const email of recipients) {
         try {
-          await sendEmailViaGmail(userId, email.trim(), subject, html);
+          await sendEmail({
+            to: email.trim(),
+            subject,
+            html,
+            senderUserId: userId,
+            provider: 'auto',
+          });
         } catch {
           failures.push(email.trim());
         }

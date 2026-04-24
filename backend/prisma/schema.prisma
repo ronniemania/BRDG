@@ -474,14 +474,60 @@ model DeliveryProfile {
   recipients    Json      @default("[]")     // { email: string; name: string }[]
   emailSubject  String    @default("Report")
   emailTemplate String    @default("") @db.Text
-  schedule      String    @default("manual") // "manual" | "daily" | "weekly"
+  schedule      String    @default("manual") // "manual" | "daily" | "weekly" | "custom"
+  scheduleCron  String?                      // cron expression when schedule = "custom"
+  scheduleHour  Int       @default(7)        // hour-of-day (0-23) for daily/weekly
+  scheduleDow   Int       @default(1)        // day-of-week (0=Sun..6=Sat) for weekly
+  dateRange     String    @default("today")  // "today"|"yesterday"|"last7"|"last30"|"mtd"|"custom"
+  isShared      Boolean   @default(false)    // visible to all admins if true
+  createdBy     String?                      // userId of creator
+  createdByEmail String?                     // snapshot for display
+  mailProvider  String    @default("auto")   // "auto"|"gmail"|"outlook"
   lastSent      DateTime?
+  lastRunAt     DateTime?
+  nextRunAt     DateTime?
+  lastRunStatus String?                      // "ok"|"failed"|"partial"
+  lastRunError  String?   @db.Text
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
+  @@index([nextRunAt])
+  @@index([isShared])
   @@map("delivery_profiles")
+}
+
+// ─── Mailbox Connections (for shared Outlook/Gmail sender mailbox) ────────────
+
+model MailboxConfig {
+  id            String   @id @default(cuid())
+  provider      String   // "outlook" | "gmail"
+  displayName   String   @default("")
+  emailAddress  String
+  isDefault     Boolean  @default(false)
+  isShared      Boolean  @default(true)   // if true, any admin can use this mailbox for sending
+  // OAuth2 tokens (Outlook/MS Graph or Gmail)
+  accessToken   String?  @db.Text
+  refreshToken  String?  @db.Text
+  expiresAt     DateTime?
+  tenantId      String?                   // MS tenant id
+  scopes        String?  @db.Text
+  // SMTP fallback (for Outlook basic auth / app passwords)
+  smtpHost      String?
+  smtpPort      Int?
+  smtpUser      String?
+  smtpPassword  String?  @db.Text
+  smtpSecure    Boolean  @default(true)
+  // Bookkeeping
+  createdById   String?
+  status        String   @default("connected") // connected|revoked|error
+  lastError     String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([provider, emailAddress])
+  @@map("mailbox_configs")
 }
 
 // ─── Ads Engine ───────────────────────────────────────────────────────────────
