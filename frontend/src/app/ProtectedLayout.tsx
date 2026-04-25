@@ -763,11 +763,11 @@ export default function ProtectedLayout() {
             <BrandViewControls />
             <GlobalRefreshButton />
 
-            {/* Notification bell */}
+            {/* Notification bell — routes to the Alerts page */}
             <button
               className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#f1f3f4] text-[#5f6368] transition-colors flex-shrink-0"
               title="Alerts"
-              onClick={() => {}}
+              onClick={() => navigate('/alerts')}
             >
               <Bell className="w-[18px] h-[18px]" />
               {unreadAlerts > 0 && (
