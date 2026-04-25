@@ -13,6 +13,7 @@ import { useDateRangeQuery, useDateRangeQueries } from '../hooks/useDateRangeQue
 import { useMetricSelection, formatMetricValue } from '../hooks/useMetricSelection';
 import { Link } from 'react-router';
 import { api } from '../lib/apiClient';
+import { formatINRCompact } from '../lib/format';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -145,7 +146,7 @@ function ExecutiveSummary() {
   if (!data) return null;
 
   const cards = [
-    { label: 'Total Revenue',   value: `₹${(data.totalRevenue / 1000).toFixed(1)}k`, icon: TrendingUp,   color: 'emerald' },
+    { label: 'Total Revenue',   value: formatINRCompact(data.totalRevenue),                              icon: TrendingUp,   color: 'emerald' },
     { label: 'All Orders',      value: data.totalOrders,                              icon: ShoppingCart,  color: 'blue' },
     { label: 'Pending Orders',  value: data.pendingOrders,                            icon: Truck,         color: data.pendingOrders > 20 ? 'red' : 'yellow' },
     { label: 'Low Stock SKUs',  value: data.lowStockItems,                            icon: Package,       color: data.lowStockItems > 10 ? 'red' : 'yellow' },
@@ -267,7 +268,7 @@ function HolisticDashboard() {
   if (!data?.aggregate) return null;
 
   const ag = data.aggregate;
-  const fmt = (n: number) => `₹${(n / 1000).toFixed(1)}k`;
+  const fmt = formatINRCompact;
 
   const aggCards = [
     { label: 'Total Revenue',    value: fmt(ag.totalRevenue),          color: 'emerald', icon: TrendingUp   },
