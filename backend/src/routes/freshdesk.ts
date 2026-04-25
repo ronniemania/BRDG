@@ -1,6 +1,9 @@
 import { Express, Request, Response } from 'express';
 import repository from '../database/repository';
 import { ValidationError, NotFoundError, ForbiddenError } from '../utils/errors';
+import { ETL_DEFAULT } from '../config/constants';
+import { runPipeline } from '../etl/pipeline';
+import { makeFreshdeskTicketsConnector } from '../etl/connectors/freshdesk';
 
 async function getBrandId(req: Request): Promise<string> {
   const brandId = (req.query.brandId as string) || req.params.brandId;
@@ -120,6 +123,34 @@ export function setupFreshdeskRoutes(app: Express) {
       // Run sync in background
       setImmediate(async () => {
         try {
+          // ETL path — every ticket payload is captured in raw_events,
+          // bad rows go to etl_dead_letters, the run is audited in
+          // etl_runs. Legacy in-line code retained below for fallback.
+          if (ETL_DEFAULT) {
+            const connector = makeFreshdeskTicketsConnector({
+              brandId,
+              domain: config.domain,
+              apiKey: config.apiKey,
+            });
+            const report = await runPipeline(connector, {
+              prisma: repository.prisma, brandId,
+            });
+            await repository.updateDataSource(source.id, {
+              syncStatus: report.status === 'failed' ? 'error' : 'active',
+              lastSync: new Date(),
+              recordCount: report.loaded,
+              lastError: report.status === 'ok' ? null : (report.errors.slice(0, 3).join(' | ') || null),
+            });
+            await repository.createSyncLog({
+              brandId,
+              dataSourceId: source.id,
+              status: report.status === 'failed' ? 'error' : 'completed',
+              recordCount: report.loaded,
+              error: report.status === 'ok' ? undefined : report.errors.slice(0, 3).join(' | '),
+            });
+            return;
+          }
+
           const subdomain = config.domain.replace(/\.freshdesk\.com$/, '');
           const auth = `Basic ${Buffer.from(`${config.apiKey}:X`).toString('base64')}`;
           let page = 1;

@@ -1,4 +1,11 @@
 import repository from '../database/repository';
+import { ETL_DEFAULT } from '../config/constants';
+import { runPipeline } from '../etl/pipeline';
+import {
+  makeShopifyOrdersConnector,
+  makeShopifyProductsConnector,
+} from '../etl/connectors/shopify';
+import { log } from '../utils/logger';
 
 interface ShopifyOrder {
   id: number;
@@ -30,6 +37,10 @@ export class ShopifyService {
     // Use repository so credentials are automatically decrypted
     const store = await repository.findShopifyStoreById(storeId);
     if (!store) throw new Error('Store not found');
+
+    if (ETL_DEFAULT) {
+      return this.syncStoreViaETL(store);
+    }
 
     const errors: string[] = [];
     let ordersSync = 0;
@@ -145,6 +156,64 @@ export class ShopifyService {
     }).catch(() => {});
 
     return { orders: ordersSync, products: productsSync, errors };
+  }
+
+  /**
+   * ETL-based sync. Routes orders + products through the pipeline.
+   * Watermarks are kept per (source, brandId, topic) so each subsequent
+   * call only fetches deltas since the last clean run.
+   */
+  private async syncStoreViaETL(store: { id: string; brandId: string; shopName: string; apiKey: string; apiPassword: string }):
+    Promise<{ orders: number; products: number; errors: string[] }> {
+    const errors: string[] = [];
+
+    const ordersConnector = makeShopifyOrdersConnector({
+      brandId: store.brandId,
+      shopName: store.shopName,
+      apiKey: store.apiKey,
+      apiPassword: store.apiPassword,
+    });
+    const productsConnector = makeShopifyProductsConnector({
+      brandId: store.brandId,
+      shopName: store.shopName,
+      apiKey: store.apiKey,
+      apiPassword: store.apiPassword,
+    });
+
+    let ordersLoaded = 0;
+    let productsLoaded = 0;
+
+    try {
+      const ordersReport = await runPipeline(ordersConnector, {
+        prisma: repository.prisma, brandId: store.brandId,
+      });
+      ordersLoaded = ordersReport.loaded;
+      if (ordersReport.errors.length) errors.push(...ordersReport.errors.slice(0, 5));
+    } catch (err: any) {
+      errors.push(`orders pipeline: ${err?.message ?? err}`);
+    }
+
+    try {
+      const productsReport = await runPipeline(productsConnector, {
+        prisma: repository.prisma, brandId: store.brandId,
+      });
+      productsLoaded = productsReport.loaded;
+      if (productsReport.errors.length) errors.push(...productsReport.errors.slice(0, 5));
+    } catch (err: any) {
+      errors.push(`products pipeline: ${err?.message ?? err}`);
+    }
+
+    // Best-effort metrics row, mirroring the legacy path.
+    await repository.prisma.shopifyMetrics.create({
+      data: { storeId: store.id, brandId: store.brandId, ordersCount: ordersLoaded, totalRevenue: 0 },
+    }).catch(() => {});
+
+    log.info('shopify sync via ETL', {
+      component: 'shopify', brandId: store.brandId, storeId: store.id,
+      orders: ordersLoaded, products: productsLoaded, errorCount: errors.length,
+    });
+
+    return { orders: ordersLoaded, products: productsLoaded, errors };
   }
 
   private mapShopifyStatus(financialStatus: string): string {

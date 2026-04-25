@@ -793,3 +793,83 @@ model ApiCostLog {
 
   @@map("api_cost_logs")
 }
+
+// ─── ETL Pipeline (raw → transform → load) ────────────────────────────────────
+//
+// Every external source writes its payloads into raw_events FIRST, then a
+// pure transform converts them to canonical rows in the serving tables
+// (orders, customers, inventory, freshdesk_tickets, performance_metrics).
+//
+// - raw_events keeps the original payload so a transform bug can be replayed
+//   without re-fetching from the source API.
+// - etl_watermarks holds the last successful cursor per source/brand so the
+//   next run only fetches deltas.
+// - etl_runs is an audit row: one per pipeline invocation.
+// - etl_dead_letters captures items that failed at the transform/load stage
+//   so they can be inspected and retried out-of-band.
+
+model RawEvent {
+  id          String   @id @default(cuid())
+  source      String   // "shopify" | "meta-ads" | "google-ads" | "freshdesk" | ...
+  topic       String   // "orders/create" | "campaign-insights" | "tickets/list" ...
+  brandId     String?  // null only for events we can't yet attribute
+  externalId  String?  // upstream id (order id, campaign id, ticket id, etc.)
+  payload     Json
+  receivedAt  DateTime @default(now())
+  processedAt DateTime?
+  status      String   @default("pending") // pending | processed | failed | skipped
+  attempts    Int      @default(0)
+  lastError   String?  @db.Text
+
+  @@index([source, status, receivedAt])
+  @@index([source, brandId, externalId])
+  @@map("raw_events")
+}
+
+model EtlWatermark {
+  id        String   @id @default(cuid())
+  source    String
+  brandId   String   // "" for global watermarks
+  key       String   // e.g. "orders.cursor", "campaigns.lastFetched"
+  value     Json     // { cursor: "...", since: "2026-04-25T..." }
+  updatedAt DateTime @updatedAt
+
+  @@unique([source, brandId, key])
+  @@map("etl_watermarks")
+}
+
+model EtlRun {
+  id            String    @id @default(cuid())
+  source        String
+  brandId       String?
+  startedAt     DateTime  @default(now())
+  finishedAt    DateTime?
+  status        String    @default("running") // running | ok | partial | failed
+  extracted     Int       @default(0)
+  transformed   Int       @default(0)
+  loaded        Int       @default(0)
+  failed        Int       @default(0)
+  durationMs    Int?
+  error         String?   @db.Text
+  metadata      Json?
+
+  @@index([source, brandId, startedAt])
+  @@index([status, startedAt])
+  @@map("etl_runs")
+}
+
+model EtlDeadLetter {
+  id          String   @id @default(cuid())
+  source      String
+  brandId     String?
+  rawEventId  String?  // points back to raw_events when applicable
+  stage       String   // "extract" | "transform" | "load"
+  payload     Json
+  error       String   @db.Text
+  attempts    Int      @default(1)
+  createdAt   DateTime @default(now())
+  replayedAt  DateTime?
+
+  @@index([source, createdAt])
+  @@map("etl_dead_letters")
+}

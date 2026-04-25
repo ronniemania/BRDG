@@ -20,6 +20,12 @@ import express from 'express';
 import crypto from 'crypto';
 import repository from '../database/repository';
 import { log } from '../utils/logger';
+import { ETL_DEFAULT } from '../config/constants';
+import { ingestEvent } from '../etl/pipeline';
+import {
+  makeShopifyOrderWebhookConnector,
+  type ShopifyOrderPayload,
+} from '../etl/connectors/shopify';
 
 const SHOPIFY_WEBHOOK_SECRET = process.env.SHOPIFY_WEBHOOK_SECRET || '';
 
@@ -107,7 +113,27 @@ export function setupWebhookRoutes(app: Express) {
         case 'orders/updated':
         case 'orders/paid':
         case 'orders/cancelled':
-          await handleOrder(brandId, topic, body);
+          if (ETL_DEFAULT) {
+            // ETL path: persist raw → transform → load. Failures are
+            // captured in etl_dead_letters; the webhook still 200s so
+            // Shopify doesn't retry forever for transform bugs.
+            const connector = makeShopifyOrderWebhookConnector(brandId);
+            const report = await ingestEvent(connector, {
+              topic,
+              brandId,
+              externalId: String(body.id ?? body.order_id ?? ''),
+              payload: body as ShopifyOrderPayload,
+            }, { prisma: repository.prisma });
+            if (report.status !== 'ok') {
+              log.warn('shopify webhook ingested with errors', {
+                component: 'webhook', topic, brandId,
+                status: report.status, sample: report.errors.slice(0, 2),
+              });
+            }
+          } else {
+            // Legacy path — kept for emergency rollback via ETL_DEFAULT=false.
+            await handleOrder(brandId, topic, body);
+          }
           break;
         default:
           log.debug('shopify webhook topic not handled', { component: 'webhook', topic });

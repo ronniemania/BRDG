@@ -19,6 +19,10 @@ import * as googleAdsService from './googleAdsService';
 import { getMetaCredentials, getGoogleCredentials } from './adsCredentialService';
 import { verifyApprovedActions, GuardrailConfig, ActionSpec } from './adsGuardrailService';
 import * as repo from '../database/adsRepository';
+import { ETL_DEFAULT } from '../config/constants';
+import { runPipeline } from '../etl/pipeline';
+import { makeMetaAdsConnector, makeGoogleAdsConnector } from '../etl/connectors/ads';
+import repository from '../database/repository';
 
 const BRIDGE_URL = process.env.BRIDGE_URL || 'http://localhost:18792';
 const BRIDGE_TOKEN = process.env.BRIDGE_TOKEN || '7b721f525270e8e44e5224defc5ae5dbc6ba81c38cf80730';
@@ -96,6 +100,29 @@ async function fetchAndStoreMetrics(
   platform: AdsPlatform,
   lookbackDays: number,
 ): Promise<void> {
+  // ETL path: use the pipeline so every insight payload lands in raw_events,
+  // failures are captured in etl_dead_letters, and the run is audited in
+  // etl_runs. Watermarks aren't strictly necessary here (idempotent upsert)
+  // but the pipeline still records them for observability.
+  if (ETL_DEFAULT) {
+    // Look up the ads account's brandId so the run is correctly attributed.
+    const accountRow = await repository.prisma.adsAccount.findUnique({
+      where: { id: adsAccountId },
+      select: { brandId: true },
+    });
+    const brandId = accountRow?.brandId;
+    if (!brandId) {
+      // Without brandId we still want to ingest, but the run won't be
+      // attributable in etl_runs. That's a noisy but acceptable outcome.
+      console.warn(`[ads-etl] adsAccountId=${adsAccountId} has no brandId — running unattributed`);
+    }
+    const connector = platform === AdsPlatform.META
+      ? makeMetaAdsConnector({ brandId: brandId ?? '', adsAccountId, lookbackDays })
+      : makeGoogleAdsConnector({ brandId: brandId ?? '', adsAccountId, lookbackDays });
+    await runPipeline(connector, { prisma: repository.prisma, brandId: brandId ?? undefined });
+    return;
+  }
+
   const campaigns = await repo.getCampaignsByAccount(adsAccountId);
 
   if (platform === AdsPlatform.META) {

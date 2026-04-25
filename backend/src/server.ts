@@ -32,6 +32,7 @@ import { setupAdsRoutes } from './routes/ads';
 import { setupStrategyRoutes } from './routes/strategy';
 import { setupClawbotRoutes } from './routes/clawbot';
 import { setupAgentRoutes } from './routes/agents';
+import { setupEtlRoutes } from './routes/etl';
 import { startScheduler } from './scheduler';
 
 // Initialize Express app
@@ -81,6 +82,7 @@ setupAdsRoutes(app);
 setupStrategyRoutes(app);
 setupClawbotRoutes(app);
 setupAgentRoutes(app);
+setupEtlRoutes(app);
 
 // Error handler — must be registered after all routes
 setupErrorHandler(app);

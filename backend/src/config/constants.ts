@@ -80,6 +80,12 @@ export const MAX_PAGE_SIZE = 1000;
 export const AUTO_SYNC_INTERVAL = 6 * 60 * 60 * 1000; // 6 hours
 export const SYNC_TIMEOUT = 120000; // 2 minutes
 
+// ETL pipeline — when true, all connectors route through backend/src/etl/.
+// Set ETL_DEFAULT=false in env for an emergency fallback to the legacy
+// in-line ingestion paths in services/shopifyService.ts, routes/freshdesk.ts,
+// services/metaAdsService.ts, services/googleAdsService.ts.
+export const ETL_DEFAULT = (process.env.ETL_DEFAULT ?? 'true').toLowerCase() !== 'false';
+
 // Google Drive folder ingestion
 // Set this to the local path where the Google Drive folder is mounted on the VPS
 // e.g. /mnt/gdrive/optisync  (via rclone mount or similar)
