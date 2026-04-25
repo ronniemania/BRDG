@@ -129,6 +129,12 @@ export async function processDueScheduledReports(): Promise<void> {
         `send profile=${profile.id}`,
       );
 
+      // Total-failure (zero sent) counts against the streak just like a thrown error,
+      // so a profile with only bad recipients eventually dead-letters.
+      if (result.sent === 0 && result.failed > 0) {
+        throw new Error(`all ${result.failed} recipient(s) failed: ${result.errors.slice(0, 3).join(' | ')}`);
+      }
+
       const next = computeNextRunAt({
         schedule: profile.schedule,
         scheduleCron: (profile as any).scheduleCron,
@@ -136,7 +142,7 @@ export async function processDueScheduledReports(): Promise<void> {
         scheduleDow: (profile as any).scheduleDow,
       }, new Date());
 
-      // Reset failure streak on any successful dispatch (even partial)
+      // Reset failure streak on any successful (or partial-success) dispatch.
       await repository.updateDeliveryProfile(profile.id, {
         nextRunAt: next,
         consecutiveFailures: 0,

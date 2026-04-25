@@ -37,6 +37,14 @@ import { startScheduler } from './scheduler';
 // Initialize Express app
 const app: Express = express();
 
+// Webhook routes MUST be registered before setupMiddleware() so:
+//   (1) the raw body is preserved for HMAC verification (global express.json()
+//       would otherwise consume the stream), and
+//   (2) CSRF middleware doesn't reject third-party POSTs that can't send tokens.
+// The webhook handler does its own auth via HMAC signature.
+console.log('Registering webhook routes (pre-middleware)...');
+setupWebhookRoutes(app);
+
 // Setup middleware
 setupMiddleware(app);
 
@@ -44,7 +52,6 @@ setupMiddleware(app);
 console.log('Registering routes...');
 setupHealthRoutes(app);
 setupAuthRoutes(app);
-setupWebhookRoutes(app); // public — HMAC-verified internally
 
 // Auth middleware — protects all routes below this line
 app.use(authMiddleware);
