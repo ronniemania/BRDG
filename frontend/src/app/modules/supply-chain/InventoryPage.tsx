@@ -4,6 +4,7 @@ import { getToken } from '../../context/AuthContext';
 import { useDateRangeQuery } from '../../hooks/useDateRangeQuery';
 import { TableSkeleton, KPIGridSkeleton } from '../../components/Skeletons';
 import { api } from '../../lib/apiClient';
+import { formatINR, formatINRCompact } from '../../lib/format';
 
 const STATUS_COLORS: Record<string, string> = {
   in_stock:     'bg-green-100 text-green-700',
@@ -134,8 +135,8 @@ export default function InventoryPage() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           {[
             { label: 'Total SKUs', value: items.length, color: 'text-blue-600 bg-blue-50', hint: null },
-            { label: 'Retail Value', value: `₹${totalValue >= 100000 ? (totalValue/100000).toFixed(1)+'L' : (totalValue/1000).toFixed(1)+'k'}`, color: 'text-green-600 bg-green-50', hint: 'Stock on hand × sale price. OOS items excluded (₹0 stock).' },
-            { label: 'Cost Value', value: `₹${totalCostVal >= 100000 ? (totalCostVal/100000).toFixed(1)+'L' : (totalCostVal/1000).toFixed(1)+'k'}`, color: 'text-teal-600 bg-teal-50', hint: 'Stock on hand × cost price — actual capital tied up.' },
+            { label: 'Retail Value', value: formatINRCompact(totalValue), color: 'text-green-600 bg-green-50', hint: 'Stock on hand × sale price. OOS items excluded (zero stock).' },
+            { label: 'Cost Value', value: formatINRCompact(totalCostVal), color: 'text-teal-600 bg-teal-50', hint: 'Stock on hand × cost price — actual capital tied up.' },
             { label: 'Low Stock', value: lowStockItems.length, color: 'text-yellow-600 bg-yellow-50', hint: 'SKUs with stock ≤ reorder point (but not zero).' },
             { label: 'Out of Stock', value: outOfStock.length, color: 'text-red-600 bg-red-50', hint: 'SKUs with zero units on hand.' },
             { label: 'Below Dynamic ROP', value: items.filter(i => (i as any).belowRop).length, color: 'text-orange-600 bg-orange-50', hint: 'SKUs below calculated ROP = (avg daily sales × 7 days lead time) + 2 days safety stock.' },
@@ -269,9 +270,9 @@ export default function InventoryPage() {
                         {i.status.replace(/_/g, ' ')}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">₹{(i.costPrice ?? 0).toLocaleString('en-IN')}</td>
-                    <td className="px-4 py-3 font-medium">₹{(i.salePrice ?? 0).toLocaleString('en-IN')}</td>
-                    <td className="px-4 py-3 text-gray-600">₹{((i.salePrice ?? 0) * (i.stockLevel ?? 0)).toLocaleString('en-IN')}</td>
+                    <td className="px-4 py-3 text-gray-500">{formatINR(i.costPrice ?? 0)}</td>
+                    <td className="px-4 py-3 font-medium">{formatINR(i.salePrice ?? 0)}</td>
+                    <td className="px-4 py-3 text-gray-600">{formatINR((i.salePrice ?? 0) * (i.stockLevel ?? 0))}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1 bg-gray-100 rounded-full p-0.5 w-fit">
                         <button

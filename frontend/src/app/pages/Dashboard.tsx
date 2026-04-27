@@ -13,7 +13,7 @@ import { useDateRangeQuery, useDateRangeQueries } from '../hooks/useDateRangeQue
 import { useMetricSelection, formatMetricValue } from '../hooks/useMetricSelection';
 import { Link } from 'react-router';
 import { api } from '../lib/apiClient';
-import { formatINRCompact } from '../lib/format';
+import { formatINR, formatINRCompact } from '../lib/format';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -509,8 +509,8 @@ export default function Dashboard() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="day" tick={{ fontSize: 9 }} interval={4} />
-                <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v: number) => [`₹${v.toLocaleString('en-IN')}`, 'Revenue']} />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => formatINRCompact(v)} />
+                <Tooltip formatter={(v: number) => [formatINR(v), 'Revenue']} />
                 <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} fill="url(#dashRev)" />
               </AreaChart>
             </ResponsiveContainer>
@@ -568,7 +568,7 @@ export default function Dashboard() {
                     <tr key={o.id} className="border-t border-gray-50 hover:bg-gray-50/50">
                       <td className="px-4 py-2.5 font-mono text-gray-500">{o.orderId}</td>
                       <td className="px-4 py-2.5 text-gray-800">{o.customerName}</td>
-                      <td className="px-4 py-2.5 font-medium">₹{(o.amount ?? 0).toLocaleString('en-IN')}</td>
+                      <td className="px-4 py-2.5 font-medium">{formatINR(o.amount ?? 0)}</td>
                       <td className="px-4 py-2.5">
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
                           o.status === 'delivered' ? 'bg-green-100 text-green-700'

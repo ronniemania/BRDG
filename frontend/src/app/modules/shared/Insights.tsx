@@ -5,6 +5,7 @@ import { getToken } from '../../context/AuthContext';
 import { useDateRangeQueries } from '../../hooks/useDateRangeQuery';
 import { ChartSkeleton, KPIGridSkeleton } from '../../components/Skeletons';
 import DateRangePicker from '../../components/DateRangePicker';
+import { formatINRCompact } from '../../lib/format';
 
 export default function Insights() {
   const [brandId, setBrandId] = useState('');
@@ -78,7 +79,7 @@ export default function Insights() {
         {/* KPI Summary */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           {[
-            { label: 'Revenue', value: `₹${((kpis.totalRevenue || 0) / 1000).toFixed(1)}k`, trend: 'up' },
+            { label: 'Revenue', value: formatINRCompact(kpis.totalRevenue || 0), trend: 'up' },
             { label: 'Fulfilment', value: `${kpis.fulfilmentRate || 0}%`, trend: (kpis.fulfilmentRate || 0) > 80 ? 'up' : 'down' },
             { label: 'Repeat Rate', value: `${kpis.repeatRate || 0}%`, trend: 'up' },
             { label: 'Avg Dispatch', value: `${kpis.avgDispatchHours || 0}h`, trend: (kpis.avgDispatchHours || 0) < 24 ? 'up' : 'down' },
@@ -101,7 +102,7 @@ export default function Insights() {
             <LineChart data={trends}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="date" tick={{ fontSize: 9 }} interval={4} tickFormatter={(d: string) => d.slice(5)} />
-              <YAxis yAxisId="left" tick={{ fontSize: 10 }} tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`} />
+              <YAxis yAxisId="left" tick={{ fontSize: 10 }} tickFormatter={(v: number) => formatINRCompact(v)} />
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} allowDecimals={false} />
               <Tooltip />
               <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} dot={false} name="Revenue" />

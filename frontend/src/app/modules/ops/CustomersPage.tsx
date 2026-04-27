@@ -5,6 +5,7 @@ import { useDateRangeQuery } from '../../hooks/useDateRangeQuery';
 import { useDateRange } from '../../context/DateRangeContext';
 import { TableSkeleton, KPIGridSkeleton } from '../../components/Skeletons';
 import DateRangePicker from '../../components/DateRangePicker';
+import { formatINR, formatINRCompact } from '../../lib/format';
 
 type Segment = 'all' | 'new' | 'dormant';
 
@@ -134,9 +135,9 @@ export default function CustomersPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[
             { label: 'Total Customers',  value: customers.length },
-            { label: 'Total Spent',      value: `₹${(totalSpent / 1000).toFixed(1)}k` },
+            { label: 'Total Spent',      value: formatINRCompact(totalSpent) },
             { label: 'Repeat Customers', value: repeatCount },
-            { label: 'Avg Order Value',  value: `₹${Math.round(avgOrderValue).toLocaleString('en-IN')}` },
+            { label: 'Avg Order Value',  value: formatINR(Math.round(avgOrderValue)) },
           ].map(k => (
             <div key={k.label} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
               <p className="text-2xl font-bold text-gray-900">{k.value}</p>
@@ -233,8 +234,8 @@ export default function CustomersPage() {
                       </td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{c.email || '—'}</td>
                       <td className="px-4 py-3 font-bold">{c.totalOrders}</td>
-                      <td className="px-4 py-3 font-semibold text-[#10b981]">₹{(c.totalSpent ?? 0).toLocaleString('en-IN')}</td>
-                      <td className="px-4 py-3 text-gray-500">₹{c.totalOrders ? Math.round((c.totalSpent ?? 0) / c.totalOrders).toLocaleString('en-IN') : 0}</td>
+                      <td className="px-4 py-3 font-semibold text-[#10b981]">{formatINR(c.totalSpent ?? 0)}</td>
+                      <td className="px-4 py-3 text-gray-500">{c.totalOrders ? formatINR(Math.round((c.totalSpent ?? 0) / c.totalOrders)) : formatINR(0)}</td>
                       <td className="px-4 py-3 text-xs text-gray-400">{c.lastOrderDate ? new Date(c.lastOrderDate).toLocaleDateString('en-IN') : '—'}</td>
                       <td className="px-4 py-3">
                         {isNew ? (

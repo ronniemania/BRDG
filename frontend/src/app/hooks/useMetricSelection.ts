@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { getToken } from '../context/AuthContext';
+import { formatINR, formatINRCompact } from '../lib/format';
 
 // ─── Metric catalogue ─────────────────────────────────────────────────────────
 
@@ -168,10 +169,9 @@ export function useMetricSelection() {
 export function formatMetricValue(value: number, format: MetricDef['format']): string {
   switch (format) {
     case 'currency': {
-      if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`;
-      if (value >= 100000)   return `₹${(value / 100000).toFixed(1)}L`;
-      if (value >= 1000)     return `₹${(value / 1000).toFixed(1)}k`;
-      return `₹${value.toLocaleString('en-IN')}`;
+      // Centralized: see lib/format for the U+20B9 fallback story.
+      if (Math.abs(value) >= 1000) return formatINRCompact(value);
+      return formatINR(value);
     }
     case 'percent':  return `${value % 1 === 0 ? value : value.toFixed(1)}%`;
     case 'hours':    return `${value % 1 === 0 ? value : value.toFixed(1)}h`;

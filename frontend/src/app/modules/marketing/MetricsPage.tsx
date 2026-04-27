@@ -5,6 +5,7 @@ import { useDateRangeQueries } from '../../hooks/useDateRangeQuery';
 import { ChartSkeleton, KPIGridSkeleton } from '../../components/Skeletons';
 import DateRangePicker from '../../components/DateRangePicker';
 import { useBrand } from '../../context/BrandContext';
+import { formatINR, formatINRCompact } from '../../lib/format';
 import {
   useMetricSelection,
   formatMetricValue,
@@ -280,8 +281,8 @@ export default function MetricsPage() {
                   <LineChart data={revenueTrend}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="date" tick={{ fontSize: 9 }} interval={4} tickFormatter={(d: string) => d.slice(5)} />
-                    <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v: number) => [`₹${v.toLocaleString('en-IN')}`, 'Revenue']} />
+                    <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => formatINRCompact(v)} />
+                    <Tooltip formatter={(v: number) => [formatINR(v), 'Revenue']} />
                     <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>

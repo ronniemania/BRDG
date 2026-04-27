@@ -5,6 +5,7 @@ import { getToken } from '../../context/AuthContext';
 import { useDateRangeQuery } from '../../hooks/useDateRangeQuery';
 import { TableSkeleton, KPIGridSkeleton } from '../../components/Skeletons';
 import DateRangePicker from '../../components/DateRangePicker';
+import { formatINR, formatINRCompact } from '../../lib/format';
 
 const STATUS_COLORS: Record<string, string> = {
   requested:  'bg-blue-100 text-blue-700',
@@ -87,8 +88,8 @@ export default function ReturnsPage() {
           <div className="col-span-1 lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: 'Total Returns', value: returns.length },
-              { label: 'Total Value', value: `₹${(totalValue / 1000).toFixed(1)}k` },
-              { label: 'Refunded', value: `₹${(refundedValue / 1000).toFixed(1)}k` },
+              { label: 'Total Value', value: formatINRCompact(totalValue) },
+              { label: 'Refunded', value: formatINRCompact(refundedValue) },
               { label: 'Pending', value: returns.filter(r => r.status === 'requested').length },
             ].map(k => (
               <div key={k.label} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
@@ -145,7 +146,7 @@ export default function ReturnsPage() {
                   <tr key={r.id} className="border-t border-gray-50 hover:bg-gray-50/50">
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">{r.orderId}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{r.customerName}</td>
-                    <td className="px-4 py-3 font-semibold">₹{(r.amount ?? 0).toLocaleString('en-IN')}</td>
+                    <td className="px-4 py-3 font-semibold">{formatINR(r.amount ?? 0)}</td>
                     <td className="px-4 py-3 text-gray-600 text-xs">{r.reason || '—'}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs">{r.channel || '—'}</td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-400">{r.sku || '—'}</td>

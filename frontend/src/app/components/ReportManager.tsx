@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FileText, Plus, Play, Trash2, RefreshCw, Calendar, Mail, X } from 'lucide-react';
 import { apiClient } from '../lib/apiClient';
+import { formatINR } from '../lib/format';
 
 const BUILT_IN_REPORT_TYPES = ['revenue', 'orders', 'inventory', 'customers', 'returns', 'business'];
 
@@ -329,7 +330,7 @@ export default function ReportManager({ brandId, brandName, openCreate, onOpenCr
               .map(([k, v]) => (
                 <div key={k} className="bg-gray-50 rounded-lg p-3">
                   <p className="text-lg font-bold text-gray-900">
-                    {/revenue|value|spent|amount/i.test(k) ? `₹${(v as number).toLocaleString('en-IN')}` : v as number}
+                    {/revenue|value|spent|amount/i.test(k) ? formatINR(v as number) : v as number}
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5 capitalize">{k.replace(/([A-Z])/g, ' $1').trim()}</p>
                 </div>

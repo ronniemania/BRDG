@@ -5,6 +5,7 @@ import { api } from '../../lib/apiClient';
 import { useDateRangeQuery } from '../../hooks/useDateRangeQuery';
 import { OrdersSkeleton } from '../../components/Skeletons';
 import DateRangePicker from '../../components/DateRangePicker';
+import { formatINR, formatINRCompact } from '../../lib/format';
 
 const STATUS_COLORS: Record<string, string> = {
   draft:     'bg-gray-100 text-gray-500',
@@ -101,7 +102,7 @@ export default function OrdersPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
           {[
             { label: 'Total Orders', value: orders.length, icon: ShoppingCart, color: 'blue' },
-            { label: 'Revenue', value: `₹${(totalRevenue / 1000).toFixed(1)}k`, icon: TrendingUp, color: 'green' },
+            { label: 'Revenue', value: formatINRCompact(totalRevenue), icon: TrendingUp, color: 'green' },
             { label: 'Draft', value: byStatus.draft || 0, icon: FileText, color: 'gray' },
             { label: 'Pending', value: byStatus.pending || 0, icon: Clock, color: 'yellow' },
             { label: 'Confirmed', value: byStatus.confirmed || 0, icon: ShoppingCart, color: 'blue' },
@@ -165,7 +166,7 @@ export default function OrdersPage() {
                   <tr key={o.id} className="border-t border-gray-50 hover:bg-gray-50/50">
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">{o.orderId}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{o.customerName}</td>
-                    <td className="px-4 py-3 font-semibold">₹{(o.amount ?? 0).toLocaleString('en-IN')}</td>
+                    <td className="px-4 py-3 font-semibold">{formatINR(o.amount ?? 0)}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_COLORS[o.status] || 'bg-gray-100 text-gray-600'}`}>{o.status}</span>
                     </td>

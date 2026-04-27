@@ -9,6 +9,7 @@ import { useDateRange } from '../../context/DateRangeContext';
 import { getToken } from '../../context/AuthContext';
 import { useDateRangeQueries } from '../../hooks/useDateRangeQuery';
 import { AnalyticsSkeleton } from '../../components/Skeletons';
+import { formatINR, formatINRCompact } from '../../lib/format';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -167,8 +168,8 @@ export default function Analytics() {
 
         <div className={`transition-opacity duration-200 ${loading && !initialLoading ? 'opacity-60 pointer-events-none' : 'opacity-100'}`}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <StatCard label="Total Revenue" value={`₹${(totalRevenue / 1000).toFixed(1)}k`} trend={8} icon={TrendingUp} color="green" sub={`${orders.length} orders`} />
-            <StatCard label="Avg Order Value" value={`₹${Math.round(avgOrderValue).toLocaleString('en-IN')}`} trend={3} icon={Package} color="blue" />
+            <StatCard label="Total Revenue" value={formatINRCompact(totalRevenue)} trend={8} icon={TrendingUp} color="green" sub={`${orders.length} orders`} />
+            <StatCard label="Avg Order Value" value={formatINR(Math.round(avgOrderValue))} trend={3} icon={Package} color="blue" />
             <StatCard label="Fulfilment Rate" value={`${fulfilmentRate}%`} trend={fulfilmentRate > 70 ? 5 : -5} icon={Truck} color={fulfilmentRate > 70 ? 'green' : 'red'} sub={`${deliveredOrders.length} delivered`} />
             <StatCard label="Customer Repeat Rate" value={`${repeatRate}%`} trend={2} icon={Users} color="purple" sub={`${repeatCustomers} repeat buyers`} />
           </div>
@@ -181,8 +182,8 @@ export default function Analytics() {
                   <defs><linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.25} /><stop offset="95%" stopColor="#10b981" stopOpacity={0} /></linearGradient></defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="day" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(v: number) => [`₹${v.toLocaleString('en-IN')}`, 'Revenue']} />
+                  <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => formatINRCompact(v)} />
+                  <Tooltip formatter={(v: number) => [formatINR(v), 'Revenue']} />
                   <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2.5} fill="url(#revGrad)" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -252,7 +253,7 @@ export default function Analytics() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs font-medium text-gray-800 truncate">{c.name}</span>
-                          <span className="text-xs font-bold text-gray-900 ml-2">₹{(c.totalSpent ?? 0).toLocaleString('en-IN')}</span>
+                          <span className="text-xs font-bold text-gray-900 ml-2">{formatINR(c.totalSpent ?? 0)}</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-1.5"><div className="h-1.5 rounded-full bg-[#10b981]" style={{ width: `${((c.totalSpent ?? 0) / maxSpend) * 100}%` }} /></div>
                       </div>
@@ -268,9 +269,9 @@ export default function Analytics() {
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={categoryChartData} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`} />
+                    <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v: number) => formatINRCompact(v)} />
                     <YAxis type="category" dataKey="category" tick={{ fontSize: 11 }} width={80} />
-                    <Tooltip formatter={(v: number) => [`₹${v.toLocaleString('en-IN')}`, 'Value']} />
+                    <Tooltip formatter={(v: number) => [formatINR(v), 'Value']} />
                     <Bar dataKey="value" fill="#10b981" radius={[0, 4, 4, 0]}>{categoryChartData.map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -281,7 +282,7 @@ export default function Analytics() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
             <StatCard label="Pending Orders" value={orders.filter((o: any) => o.status === 'pending').length} icon={Truck} color="yellow" />
             <StatCard label="Returns Pending" value={returns.filter((r: any) => r.status === 'requested').length} icon={RotateCcw} color="red" />
-            <StatCard label="Total Refunded" value={`₹${totalReturnValue.toLocaleString('en-IN')}`} icon={RotateCcw} color="red" />
+            <StatCard label="Total Refunded" value={formatINR(totalReturnValue)} icon={RotateCcw} color="red" />
             <StatCard label="Total Customers" value={customers.length} icon={Users} color="blue" />
           </div>
 
