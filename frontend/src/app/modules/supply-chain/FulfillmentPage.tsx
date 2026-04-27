@@ -1,6 +1,7 @@
 import { useState, useEffect, Fragment } from 'react';
 import { Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import { api } from '../../lib/apiClient';
+import { toast } from '../../components/Toast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -184,7 +185,7 @@ function SLAPanel({ brandId, sla, onSaved }: { brandId: string; sla: SLAConfig; 
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to save SLA');
+      toast.error(err instanceof Error ? err.message : 'Failed to save SLA');
     } finally {
       setSaving(false);
     }

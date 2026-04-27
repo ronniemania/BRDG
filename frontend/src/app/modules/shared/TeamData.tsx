@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../lib/apiClient';
 import { getToken, useAuth } from '../../context/AuthContext';
+import { toast } from '../../components/Toast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -167,7 +168,7 @@ export default function TeamData() {
         setPendingCount(c => Math.max(0, c - 1));
       }
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Action failed');
+      toast.error(err instanceof Error ? err.message : 'Action failed');
     } finally {
       setActioning(null);
     }
@@ -182,7 +183,7 @@ export default function TeamData() {
       setItems(prev => prev.filter(i => i.id !== id));
       if (removed?.status === 'pending') setPendingCount(c => Math.max(0, c - 1));
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Delete failed');
+      toast.error(err instanceof Error ? err.message : 'Delete failed');
     } finally {
       setActioning(null);
     }
@@ -209,7 +210,7 @@ export default function TeamData() {
       await api.delete(`/api/brands/${brandId}/members/${memberId}`);
       setMembers(prev => prev.filter(m => m.user.id !== memberId));
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to remove member');
+      toast.error(err instanceof Error ? err.message : 'Failed to remove member');
     }
   };
 

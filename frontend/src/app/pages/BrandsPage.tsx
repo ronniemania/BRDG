@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { Store, Plus, Trash2, Edit2, Check, X, FileText } from 'lucide-react';
 import { getToken } from '../context/AuthContext';
 import { api } from '../lib/apiClient';
+import { toast } from '../components/Toast';
 
 export default function BrandsPage() {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ export default function BrandsPage() {
       setBrands(b => [...b, d.brand]);
       setNewName('');
       setShowCreate(false);
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { toast.error(err.message); }
     finally { setSaving(false); }
   };
 
@@ -45,7 +46,7 @@ export default function BrandsPage() {
       const d: any = await api.patch(`/api/brands/${id}`, { name: editName.trim() });
       setBrands(b => b.map(br => br.id === id ? d.brand : br));
       setEditingId(null);
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const handleDelete = async (id: string) => {
@@ -53,7 +54,7 @@ export default function BrandsPage() {
     try {
       await api.delete(`/api/brands/${id}`);
       setBrands(b => b.filter(br => br.id !== id));
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { toast.error(err.message); }
   };
 
   return (

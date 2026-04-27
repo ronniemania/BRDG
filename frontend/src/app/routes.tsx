@@ -13,6 +13,7 @@ import { DateRangeProvider } from './context/DateRangeContext';
 import { BrandProvider } from './context/BrandContext';
 import { SyncProvider } from './context/SyncContext';
 import { RBACProvider } from './context/RBACContext';
+import { ToastProvider } from './components/Toast';
 
 // Marketing module
 import Analytics from './modules/marketing/Analytics';
@@ -84,15 +85,17 @@ function RouteErrorBoundary() {
 
 function ProtectedLayoutWithProviders() {
   return (
-    <SyncProvider>
-      <BrandProvider>
-        <RBACProvider>
-          <DateRangeProvider defaultPreset="30d">
-            <ProtectedLayout />
-          </DateRangeProvider>
-        </RBACProvider>
-      </BrandProvider>
-    </SyncProvider>
+    <ToastProvider>
+      <SyncProvider>
+        <BrandProvider>
+          <RBACProvider>
+            <DateRangeProvider defaultPreset="30d">
+              <ProtectedLayout />
+            </DateRangeProvider>
+          </RBACProvider>
+        </BrandProvider>
+      </SyncProvider>
+    </ToastProvider>
   );
 }
 

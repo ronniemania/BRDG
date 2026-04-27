@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Shield, Users, RefreshCw, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/apiClient';
+import { toast } from '../components/Toast';
 
 const STATUS_COLORS: Record<string, string> = {
   approved: 'bg-green-100 text-green-700',
@@ -59,7 +60,7 @@ export default function AdminPanel() {
     try {
       const d: any = await api.patch(`/api/admin/users/${userId}`, { status });
       setUsers(u => u.map(usr => usr.id === userId ? { ...usr, status: d.user.status } : usr));
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { toast.error(err.message); }
     finally { setUpdatingId(null); }
   };
 
@@ -68,7 +69,7 @@ export default function AdminPanel() {
     try {
       const d: any = await api.patch(`/api/admin/users/${userId}`, { role });
       setUsers(u => u.map(usr => usr.id === userId ? { ...usr, role: d.user.role } : usr));
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { toast.error(err.message); }
     finally { setUpdatingId(null); }
   };
 

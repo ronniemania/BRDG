@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Database, Plus, RefreshCw, CheckCircle, AlertCircle, Clock, Trash2, Upload, Link2, Link2Off } from 'lucide-react';
 import { getToken } from '../../context/AuthContext';
 import { api } from '../../lib/apiClient';
+import { toast } from '../../components/Toast';
 
 const SYNC_STATUS_COLORS: Record<string, string> = {
   active:   'bg-green-100 text-green-700',
@@ -234,7 +235,7 @@ export default function DataSources() {
         }
       }, 2000);
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
       setSyncing(null);
     }
   };
@@ -247,7 +248,7 @@ export default function DataSources() {
       setSources(s => [d.source, ...s]);
       setShowCreate(false);
       setNewSource({ name: '', type: 'shopify' });
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { toast.error(err.message); }
     finally { setSaving(false); }
   };
 
@@ -256,7 +257,7 @@ export default function DataSources() {
     try {
       await api.delete(`/api/data-sources/${id}`);
       setSources(s => s.filter(src => src.id !== id));
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const handleUpload = async () => {
@@ -275,7 +276,7 @@ export default function DataSources() {
       if (fileInputRef.current) fileInputRef.current.value = '';
       loadData();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setUploading(false);
     }

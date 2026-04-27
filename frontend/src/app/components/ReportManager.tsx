@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FileText, Plus, Play, Trash2, RefreshCw, Calendar, Mail, X } from 'lucide-react';
 import { apiClient } from '../lib/apiClient';
 import { formatINR } from '../lib/format';
+import { toast } from './Toast';
 
 const BUILT_IN_REPORT_TYPES = ['revenue', 'orders', 'inventory', 'customers', 'returns', 'business'];
 
@@ -200,7 +201,7 @@ export default function ReportManager({ brandId, brandName, openCreate, onOpenCr
       setNewReport({ name: '', type: 'business', customType: '' });
       setCustomTypeMode(false);
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSaving(false);
     }
@@ -217,7 +218,7 @@ export default function ReportManager({ brandId, brandName, openCreate, onOpenCr
       setResult(d);
       setReports((r) => r.map((rep) => rep.id === id ? { ...rep, lastGenerated: new Date().toISOString() } : rep));
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setRunning(null);
       setRunFilters({ start_date: '', end_date: '' });
@@ -232,7 +233,7 @@ export default function ReportManager({ brandId, brandName, openCreate, onOpenCr
       setReports((r) => r.filter((rep) => rep.id !== id));
       if (result?.report?.id === id) setResult(null);
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 

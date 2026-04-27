@@ -5,6 +5,7 @@ import { useDateRangeQuery } from '../../hooks/useDateRangeQuery';
 import { TableSkeleton, KPIGridSkeleton } from '../../components/Skeletons';
 import { api } from '../../lib/apiClient';
 import { formatINR, formatINRCompact } from '../../lib/format';
+import { toast } from '../../components/Toast';
 
 const STATUS_COLORS: Record<string, string> = {
   in_stock:     'bg-green-100 text-green-700',
@@ -67,7 +68,7 @@ export default function InventoryPage() {
       await api.patch(`/api/inventory/${item.id}`, { trackedOnDashboard: !item.trackedOnDashboard });
       refetch();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setTogglingId(null);
     }
@@ -87,7 +88,7 @@ export default function InventoryPage() {
       setNewItem({ sku: '', name: '', stockLevel: 0, reorderPoint: 10, category: 'General', costPrice: 0, salePrice: 0 });
       refetch();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSaving(false);
     }

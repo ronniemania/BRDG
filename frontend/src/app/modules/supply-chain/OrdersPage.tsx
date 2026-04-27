@@ -6,6 +6,7 @@ import { useDateRangeQuery } from '../../hooks/useDateRangeQuery';
 import { OrdersSkeleton } from '../../components/Skeletons';
 import DateRangePicker from '../../components/DateRangePicker';
 import { formatINR, formatINRCompact } from '../../lib/format';
+import { toast } from '../../components/Toast';
 
 const STATUS_COLORS: Record<string, string> = {
   draft:     'bg-gray-100 text-gray-500',
@@ -58,7 +59,7 @@ export default function OrdersPage() {
       await api.patch(`/api/ecommerce/orders/${internalId}`, { status: 'cancelled' });
       refetch();
     } catch (err: any) {
-      alert(`Failed to cancel: ${err.message}`);
+      toast.error(`Failed to cancel: ${err.message}`);
     } finally {
       setCancelling(null);
     }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Database, Plus, RefreshCw, CheckCircle, AlertCircle, Clock, Trash2 } from 'lucide-react';
 import { getToken } from '../context/AuthContext';
 import { api } from '../lib/apiClient';
+import { toast } from '../components/Toast';
 
 const SYNC_STATUS_COLORS: Record<string, string> = {
   active:   'bg-green-100 text-green-700',
@@ -52,7 +53,7 @@ export default function DataSources() {
         setSyncing(null);
       }, 4000);
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
       setSyncing(null);
     }
   };
@@ -65,7 +66,7 @@ export default function DataSources() {
       setSources(s => [d.source, ...s]);
       setShowCreate(false);
       setNewSource({ name: '', type: 'shopify' });
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { toast.error(err.message); }
     finally { setSaving(false); }
   };
 
@@ -74,7 +75,7 @@ export default function DataSources() {
     try {
       await api.delete(`/api/data-sources/${id}`);
       setSources(s => s.filter(src => src.id !== id));
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { toast.error(err.message); }
   };
 
   return (
