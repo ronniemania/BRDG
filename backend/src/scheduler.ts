@@ -4,7 +4,12 @@ import { syncDriveFolder } from './services/driveFolderService';
 import { ShopifyService } from './services/shopifyService';
 import { sendEmail } from './services/mailerService';
 import { processDueScheduledReports } from './services/reportScheduler';
+import { processAnomalyDigest } from './services/anomalyDigest';
 import repository from './database/repository';
+
+// One-shot guard so the daily anomaly digest fires exactly once per day
+// even though the minute-tick wakes us 60× per hour.
+let lastDigestDate = '';
 
 const shopifyService = new ShopifyService();
 
@@ -454,12 +459,27 @@ export function startScheduler() {
   // Ads management cron jobs (daily optimization + stale queue alerts)
   initAdsScheduler();
 
-  // Minute tick — EOD email window + scheduled reports dispatch
+  // Minute tick — EOD email window + scheduled reports dispatch + anomaly digest
   setInterval(() => {
     runEodEmail().catch(err => console.error('[Scheduler] EOD tick failed:', err.message));
     processDueScheduledReports().catch(err =>
       console.error('[Scheduler] Scheduled reports tick failed:', err.message),
     );
+
+    // Anomaly digest — runs once per day around 23:50 (just before the EOD
+    // email at 23:55). Falls within the same minute tick so we don't add
+    // another timer; the date guard makes it idempotent across restarts
+    // within the same day.
+    const now = new Date();
+    if (now.getHours() === 23 && now.getMinutes() >= 50 && now.getMinutes() < 55) {
+      const todayKey = now.toISOString().slice(0, 10);
+      if (lastDigestDate !== todayKey) {
+        lastDigestDate = todayKey;
+        processAnomalyDigest().catch(err =>
+          console.error('[Scheduler] Anomaly digest failed:', err.message),
+        );
+      }
+    }
   }, 60 * 1000);
 }
 

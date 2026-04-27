@@ -1,3 +1,7 @@
+// Import errorTracker first so its process-wide unhandledRejection /
+// uncaughtException signal handlers are installed before any other code
+// has a chance to throw asynchronously during boot.
+import './utils/errorTracker';
 import express, { Express } from 'express';
 import { setupMiddleware, setupErrorHandler } from './config/middleware';
 import { authMiddleware } from './config/authMiddleware';

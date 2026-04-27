@@ -1,51 +1,73 @@
-import { createBrowserRouter, useRouteError, isRouteErrorResponse, Navigate } from 'react-router';
+/**
+ * Application route table.
+ *
+ * Pages are loaded with React.lazy + Suspense so each route ships in
+ * its own chunk. The initial bundle now contains only Login, Signup,
+ * AuthGuard, ProtectedLayout, and the providers — every dashboard page
+ * downloads on demand. This shaves a sizeable chunk off the time-to-
+ * interactive on first paint, and means a heavy page (Strategy at 800
+ * lines, ClawbotPage at 700) doesn't tax users who never visit it.
+ *
+ * One <Suspense> wraps the protected outlet rather than each page so
+ * cross-route navigation gets a single fallback instead of stacking
+ * spinners. The fallback uses the existing DashboardSkeleton — a
+ * neutral, recognizable placeholder that doesn't shift layout.
+ */
+
+import { lazy, Suspense } from 'react';
+import { createBrowserRouter, useRouteError, isRouteErrorResponse, Navigate, Outlet } from 'react-router';
 import AuthGuard from './components/AuthGuard';
 import ProtectedLayout from './ProtectedLayout';
-import Dashboard from './pages/Dashboard';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import AdminPanel from './pages/AdminPanel';
-import BrandsPage from './pages/BrandsPage';
-import ModulesPage from './pages/ModulesPage';
-import Settings from './pages/Settings';
-import OAuthCallback from './pages/OAuthCallback';
+import { DashboardSkeleton } from './components/Skeletons';
 import { DateRangeProvider } from './context/DateRangeContext';
 import { BrandProvider } from './context/BrandContext';
 import { SyncProvider } from './context/SyncContext';
 import { RBACProvider } from './context/RBACContext';
 import { ToastProvider } from './components/Toast';
 
-// Marketing module
-import Analytics from './modules/marketing/Analytics';
-import MetricsPage from './modules/marketing/MetricsPage';
+// ── Eagerly-loaded auth pages (small, pre-login) ─────────────────────────────
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import OAuthCallback from './pages/OAuthCallback';
 
-// Supply-chain module
-import InventoryPage from './modules/supply-chain/InventoryPage';
-import OrdersPage from './modules/supply-chain/OrdersPage';
-import FulfillmentPage from './modules/supply-chain/FulfillmentPage';
+// ── Lazy-loaded protected pages ──────────────────────────────────────────────
+const Dashboard       = lazy(() => import('./pages/Dashboard'));
+const AdminPanel      = lazy(() => import('./pages/AdminPanel'));
+const BrandsPage      = lazy(() => import('./pages/BrandsPage'));
+const ModulesPage     = lazy(() => import('./pages/ModulesPage'));
+const Settings        = lazy(() => import('./pages/Settings'));
+const RBACSettings    = lazy(() => import('./pages/RBACSettings'));
 
-// Ops module
-import CustomersPage from './modules/ops/CustomersPage';
-import ReturnsPage from './modules/ops/ReturnsPage';
+// Marketing
+const Analytics       = lazy(() => import('./modules/marketing/Analytics'));
+const MetricsPage     = lazy(() => import('./modules/marketing/MetricsPage'));
 
-// Shared module
-import Insights from './modules/shared/Insights';
-import DataSources from './modules/shared/DataSources';
-import Alerts from './modules/shared/Alerts';
-import Touchpoints from './modules/shared/Touchpoints';
-import Reports from './modules/shared/Reports';
-import BrandReports from './modules/shared/BrandReports';
-import TeamData from './modules/shared/TeamData';
-import DeliveryProfiles from './modules/shared/DeliveryProfiles';
-import RBACSettings from './pages/RBACSettings';
+// Supply-chain
+const InventoryPage   = lazy(() => import('./modules/supply-chain/InventoryPage'));
+const OrdersPage      = lazy(() => import('./modules/supply-chain/OrdersPage'));
+const FulfillmentPage = lazy(() => import('./modules/supply-chain/FulfillmentPage'));
 
-// Ads & Strategy module
-import AdsManagement from './pages/AdsManagement';
-import AdsActionLog from './pages/AdsActionLog';
-import Strategy from './pages/Strategy';
-import AdCreator from './pages/AdCreator';
-import ClawbotPage from './pages/ClawbotPage';
-import AgentEcosystem from './pages/AgentEcosystem';
+// Ops
+const CustomersPage   = lazy(() => import('./modules/ops/CustomersPage'));
+const ReturnsPage     = lazy(() => import('./modules/ops/ReturnsPage'));
+
+// Shared / Intelligence
+const Insights         = lazy(() => import('./modules/shared/Insights'));
+const DataSources      = lazy(() => import('./modules/shared/DataSources'));
+const Alerts           = lazy(() => import('./modules/shared/Alerts'));
+const Touchpoints      = lazy(() => import('./modules/shared/Touchpoints'));
+const Reports          = lazy(() => import('./modules/shared/Reports'));
+const BrandReports     = lazy(() => import('./modules/shared/BrandReports'));
+const TeamData         = lazy(() => import('./modules/shared/TeamData'));
+const DeliveryProfiles = lazy(() => import('./modules/shared/DeliveryProfiles'));
+
+// Ads & Strategy
+const AdsManagement   = lazy(() => import('./pages/AdsManagement'));
+const AdsActionLog    = lazy(() => import('./pages/AdsActionLog'));
+const Strategy        = lazy(() => import('./pages/Strategy'));
+const AdCreator       = lazy(() => import('./pages/AdCreator'));
+const ClawbotPage     = lazy(() => import('./pages/ClawbotPage'));
+const AgentEcosystem  = lazy(() => import('./pages/AgentEcosystem'));
 
 function NotFound() {
   return (
@@ -83,6 +105,15 @@ function RouteErrorBoundary() {
   );
 }
 
+/** Suspense boundary that wraps every lazily-loaded protected page. */
+function LazyOutlet() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <Outlet />
+    </Suspense>
+  );
+}
+
 function ProtectedLayoutWithProviders() {
   return (
     <ToastProvider>
@@ -110,40 +141,47 @@ export const router = createBrowserRouter([
       {
         Component: ProtectedLayoutWithProviders,
         children: [
-          { index: true, Component: Dashboard },
-          // Marketing
-          { path: 'analytics', Component: Analytics },
-          { path: 'metrics', Component: MetricsPage },
-          { path: 'ecom-metrics', element: <Navigate to="/fulfillment" replace /> },
-          // Supply Chain
-          { path: 'orders', Component: OrdersPage },
-          { path: 'inventory', Component: InventoryPage },
-          { path: 'fulfillment', Component: FulfillmentPage },
-          // Ops
-          { path: 'customers', Component: CustomersPage },
-          { path: 'returns', Component: ReturnsPage },
-          // Shared / Intelligence
-          { path: 'reports', Component: Reports },
-          { path: 'insights', Component: Insights },
-          { path: 'data-sources', Component: DataSources },
-          { path: 'team-data', Component: TeamData },
-          { path: 'touchpoints', Component: Touchpoints },
-          { path: 'alerts', Component: Alerts },
-          { path: 'brands/:brandId/reports', Component: BrandReports },
-          { path: 'delivery-profiles', Component: DeliveryProfiles },
-          // Ads & Strategy
-          { path: 'ads', Component: AdsManagement },
-          { path: 'ads/create', Component: AdCreator },
-          { path: 'ads/log', Component: AdsActionLog },
-          { path: 'strategy', Component: Strategy },
-          { path: 'clawbot', Component: ClawbotPage },
-          { path: 'agents', Component: AgentEcosystem },
-          // Management
-          { path: 'settings', Component: Settings },
-          { path: 'admin', Component: AdminPanel },
-          { path: 'brands', Component: BrandsPage },
-          { path: 'modules', Component: ModulesPage },
-          { path: 'rbac', Component: RBACSettings },
+          {
+            // Single Suspense boundary so navigating between lazy pages
+            // shows one fallback, not nested ones.
+            Component: LazyOutlet,
+            children: [
+              { index: true, Component: Dashboard },
+              // Marketing
+              { path: 'analytics', Component: Analytics },
+              { path: 'metrics', Component: MetricsPage },
+              { path: 'ecom-metrics', element: <Navigate to="/fulfillment" replace /> },
+              // Supply Chain
+              { path: 'orders', Component: OrdersPage },
+              { path: 'inventory', Component: InventoryPage },
+              { path: 'fulfillment', Component: FulfillmentPage },
+              // Ops
+              { path: 'customers', Component: CustomersPage },
+              { path: 'returns', Component: ReturnsPage },
+              // Shared / Intelligence
+              { path: 'reports', Component: Reports },
+              { path: 'insights', Component: Insights },
+              { path: 'data-sources', Component: DataSources },
+              { path: 'team-data', Component: TeamData },
+              { path: 'touchpoints', Component: Touchpoints },
+              { path: 'alerts', Component: Alerts },
+              { path: 'brands/:brandId/reports', Component: BrandReports },
+              { path: 'delivery-profiles', Component: DeliveryProfiles },
+              // Ads & Strategy
+              { path: 'ads', Component: AdsManagement },
+              { path: 'ads/create', Component: AdCreator },
+              { path: 'ads/log', Component: AdsActionLog },
+              { path: 'strategy', Component: Strategy },
+              { path: 'clawbot', Component: ClawbotPage },
+              { path: 'agents', Component: AgentEcosystem },
+              // Management
+              { path: 'settings', Component: Settings },
+              { path: 'admin', Component: AdminPanel },
+              { path: 'brands', Component: BrandsPage },
+              { path: 'modules', Component: ModulesPage },
+              { path: 'rbac', Component: RBACSettings },
+            ],
+          },
         ],
       },
     ],

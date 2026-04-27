@@ -3,6 +3,8 @@ import express, { Express } from 'express';
 import cookieParser from 'cookie-parser';
 import { csrfMiddleware } from './csrf';
 import { CORS_ORIGINS } from './constants';
+import { captureException } from '../utils/errorTracker';
+import { AuthRequest } from './authMiddleware';
 
 export function setupMiddleware(app: Express) {
   // CORS configuration — credentials required for cookies
@@ -34,8 +36,18 @@ export function setupMiddleware(app: Express) {
 // Error handler — must be registered AFTER all routes (called from server.ts)
 export function setupErrorHandler(app: express.Express) {
   app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    console.error(`[${new Date().toISOString()}] Error on ${req.method} ${req.path}:`, err);
-    res.status(err.status || 500).json({
+    const status = err.status || 500;
+    // Only forward genuine 5xx and unexpected 4xx (not validation noise)
+    // to the error tracker — those are signal-worthy. 401/403/404 are
+    // expected at scale and would drown out real bugs.
+    if (status >= 500) {
+      captureException(err, {
+        component: 'http', route: `${req.method} ${req.path}`,
+        userId: (req as AuthRequest).userId,
+      });
+    }
+    console.error(`[${new Date().toISOString()}] Error on ${req.method} ${req.path}:`, err.message);
+    res.status(status).json({
       message: err.message || 'Internal server error',
       ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
     });
