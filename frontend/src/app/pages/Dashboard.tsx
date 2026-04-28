@@ -7,6 +7,7 @@ import {
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { getToken, useAuth } from '../context/AuthContext';
 import { useBrand } from '../context/BrandContext';
+import { useDateRange } from '../context/DateRangeContext';
 import { DashboardSkeleton } from '../components/Skeletons';
 import DateRangePicker from '../components/DateRangePicker';
 import { useDateRangeQuery, useDateRangeQueries } from '../hooks/useDateRangeQuery';
@@ -240,18 +241,31 @@ interface HolisticData {
 function HolisticDashboard() {
   const [data, setData] = useState<HolisticData | null>(null);
   const [loading, setLoading] = useState(true);
+  // Mirror the same date-range the rest of the dashboard uses.
+  // generation increments on every picker change so the effect re-fires.
+  const { preset, params, generation } = useDateRange();
 
   useEffect(() => {
     const token = getToken();
     if (!token) { setLoading(false); return; }
     let active = true;
-    fetch('/api/dashboard/holistic', { headers: { Authorization: `Bearer ${token}` } })
+    setLoading(true);
+
+    // Build date query string identical to useDateRangeQuery's logic.
+    let dateQuery = '';
+    if (preset !== 'all' && preset !== 'custom') {
+      dateQuery = `?range=${preset}`;
+    } else if (preset === 'custom') {
+      dateQuery = `?start_date=${encodeURIComponent(params.start_date)}&end_date=${encodeURIComponent(params.end_date)}`;
+    }
+
+    fetch(`/api/dashboard/holistic${dateQuery}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (active && d) setData(d); })
       .catch(() => {})
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [generation]); // re-fetch whenever the date range changes
 
   if (loading) {
     return (

@@ -6,8 +6,15 @@ export function setupDashboardRoutes(app: Express) {
   /**
    * GET /api/dashboard/holistic
    * Aggregates key metrics across all brands accessible to the calling user.
-   * Returns both an aggregate summary and a per-brand breakdown for the
-   * "Holistic View" in the multi-brand dashboard.
+   * Returns both an aggregate summary and a per-brand breakdown.
+   *
+   * Date filtering
+   * ─────────────
+   * Accepts the same date params as every other route: ?range=7d or
+   * ?start_date=&end_date=. These are applied to time-series metrics
+   * (orders, revenue, returns) so the holistic view stays in sync with
+   * the date-range picker. Point-in-time metrics (low stock, pending
+   * orders, customer count) are always current-state — not date-filtered.
    */
   app.get('/api/dashboard/holistic', async (req: Request, res: Response) => {
     try {
@@ -18,13 +25,17 @@ export function setupDashboardRoutes(app: Express) {
         return res.json({ aggregate: null, byBrand: [] });
       }
 
+      // Build date filters for time-series queries.
+      // Inventory / pending orders / customer counts are current-state — not filtered.
+      const dateFilters = req.query as Record<string, string>;
+
       const byBrand = await Promise.all(
         brands.map(async (brand) => {
           const [orders, customers, inventory, returns, breachCount] = await Promise.all([
-            repository.findOrdersByBrand(brand.id),
+            repository.findOrdersByBrand(brand.id, dateFilters),
             repository.findCustomersByBrand(brand.id),
             repository.findInventoryByBrand(brand.id),
-            repository.findReturnsByBrand(brand.id),
+            repository.findReturnsByBrand(brand.id, dateFilters),
             repository.prisma.breachLog.count({ where: { brandId: brand.id } }),
           ]);
 

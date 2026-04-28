@@ -626,9 +626,10 @@ export default function ProtectedLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadAlerts, setUnreadAlerts] = useState(0);
   const [pendingTeamData, setPendingTeamData] = useState(0);
-  const [searchBrandId, setSearchBrandId] = useState('');
   const { user } = useAuth();
   const { brandId } = useBrand();
+  // Global search always scopes to the active brand — no separate state needed.
+  const searchBrandId = brandId;
 
   useEffect(() => {
     const token = getToken();
@@ -663,20 +664,11 @@ export default function ProtectedLayout() {
   }, [brandId]);
 
   useEffect(() => {
+    if (!brandId) return;
+
     async function fetchCounts() {
       const token = getToken();
       if (!token) return;
-
-      const brandsRes = await fetch('/api/brands', {
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: 'include',
-      }).catch(() => null);
-      if (!brandsRes?.ok) return;
-
-      const brandsData = await brandsRes.json().catch(() => null);
-      const brandId = brandsData?.brands?.[0]?.id;
-      if (!brandId) return;
-      setSearchBrandId(brandId);
 
       const [alertRes, teamRes] = await Promise.all([
         fetch(`/api/alerts/unread-count?brandId=${brandId}`, {
@@ -701,7 +693,7 @@ export default function ProtectedLayout() {
     fetchCounts();
     const timer = setInterval(fetchCounts, 60_000);
     return () => clearInterval(timer);
-  }, [user]);
+  }, [user, brandId]); // re-fetch counts when brand changes
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f8f9fa]">
