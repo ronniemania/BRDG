@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Package, Search, RefreshCw, Download, Plus, AlertTriangle, ChevronDown, Eye, EyeOff } from 'lucide-react';
-import { getToken } from '../../context/AuthContext';
+import { useBrand } from '../../context/BrandContext';
 import { useDateRangeQuery } from '../../hooks/useDateRangeQuery';
 import { TableSkeleton, KPIGridSkeleton } from '../../components/Skeletons';
 import { api } from '../../lib/apiClient';
@@ -21,7 +21,7 @@ const BIN_COLORS: Record<string, string> = {
 };
 
 export default function InventoryPage() {
-  const [brandId, setBrandId] = useState('');
+  const { brandId } = useBrand();
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -32,15 +32,6 @@ export default function InventoryPage() {
   const [newItem, setNewItem] = useState({ sku: '', name: '', stockLevel: 0, reorderPoint: 10, category: 'General', costPrice: 0, salePrice: 0 });
   const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    fetch('/api/brands', { credentials: 'include', headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.brands?.[0]) setBrandId(d.brands[0].id); })
-      .catch(() => {});
-  }, []);
 
   const { data, loading, initialLoading, refetch } = useDateRangeQuery({
     url: brandId ? `/api/inventory?brandId=${brandId}` : null,

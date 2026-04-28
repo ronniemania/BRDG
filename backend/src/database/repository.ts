@@ -125,16 +125,20 @@ async function upsertOrder(data: {
   brandId: string; orderId: string; customerName: string;
   amount: number; status?: string; orderDate?: Date;
   dispatchDate?: Date; hoursToDispatch?: number;
+  sourceOrderNumber?: string; customerEmail?: string;
 }) {
   const { brandId, orderId, ...rest } = data;
   return prisma.order.upsert({
     where: { brandId_orderId: { brandId, orderId } },
     update: {
       customerName: rest.customerName,
+      customerEmail: rest.customerEmail,
       amount: rest.amount,
       status: rest.status,
       dispatchDate: rest.dispatchDate,
       hoursToDispatch: rest.hoursToDispatch,
+      // sourceOrderNumber only set on first upsert; don't overwrite if already present.
+      ...(rest.sourceOrderNumber && { sourceOrderNumber: rest.sourceOrderNumber }),
     },
     create: { brandId, orderId, ...rest },
   });

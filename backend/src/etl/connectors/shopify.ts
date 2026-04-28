@@ -63,6 +63,8 @@ export interface ShopifyProductPayload {
 export interface CanonicalOrder {
   brandId: string;
   orderId: string;
+  /** Raw external ID (e.g. Shopify numeric ID) kept for cross-reference. */
+  sourceOrderNumber?: string;
   customerName: string;
   customerEmail?: string;
   amount: number;
@@ -96,11 +98,14 @@ export interface CanonicalInventoryItem {
 // ── Status mapping ───────────────────────────────────────────────────────────
 
 export function mapShopifyOrderStatus(p: ShopifyOrderPayload): string {
+  // Map to the app's canonical statuses so every frontend STATUS_COLORS
+  // map renders the correct badge colour. Raw Shopify values ('fulfilled',
+  // 'paid') were leaking through before and showing as unstyled grey.
   if (p.cancelled_at) return 'cancelled';
-  if (p.fulfillment_status === 'fulfilled') return 'fulfilled';
-  if (p.financial_status === 'paid') return 'paid';
+  if (p.fulfillment_status === 'fulfilled') return 'delivered';  // fully dispatched
   if (p.financial_status === 'refunded') return 'returned';
   if (p.financial_status === 'voided') return 'cancelled';
+  if (p.financial_status === 'paid') return 'confirmed';         // paid, awaiting fulfilment
   return 'pending';
 }
 
@@ -133,7 +138,12 @@ export function transformOrder(brandId: string, p: ShopifyOrderPayload): Canonic
 
   return {
     brandId,
-    orderId: String(p.id),
+    // p.name is the human-readable Shopify order number (#1034).
+    // p.id is the internal numeric ID (5678901234567). We always
+    // prefer name for display; fall back only if Shopify omits it
+    // (which never happens in practice for real orders).
+    orderId: p.name || `#${p.id}`,
+    sourceOrderNumber: String(p.id),
     customerName,
     customerEmail: p.customer?.email || p.email,
     amount: Number.isFinite(amount) ? amount : 0,
@@ -237,7 +247,9 @@ export function makeShopifyOrdersConnector(
         await repository.upsertOrder({
           brandId: row.brandId,
           orderId: row.orderId,
+          sourceOrderNumber: row.sourceOrderNumber,
           customerName: row.customerName,
+          customerEmail: row.customerEmail,
           amount: row.amount,
           status: row.status,
           orderDate: row.orderDate,

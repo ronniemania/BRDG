@@ -2,6 +2,7 @@ import { useState, useEffect, Fragment } from 'react';
 import { Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import { api } from '../../lib/apiClient';
 import { toast } from '../../components/Toast';
+import { useBrand } from '../../context/BrandContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -47,17 +48,24 @@ type StepState = 'complete' | 'breach' | 'active' | 'overdue' | 'pending';
 
 function getStepState(order: FulfillmentOrder, stepIdx: number, sla: SLAConfig): StepState {
   const step = STEPS[stepIdx];
-  const thisTs: string | null = order[step.key as keyof FulfillmentOrder];
-  const prevTs: string | null = step.prevKey ? order[step.prevKey as keyof FulfillmentOrder] : null;
+  const thisTs: string | null = order[step.key as keyof FulfillmentOrder] as string | null;
+  const prevTs: string | null = step.prevKey ? order[step.prevKey as keyof FulfillmentOrder] as string | null : null;
   const slaMins: number | null = step.slaMinsKey ? sla[step.slaMinsKey as keyof SLAConfig] : null;
 
   if (thisTs) {
+    // This step has a timestamp — check if it breached SLA.
     if (slaMins !== null && prevTs) {
       const diffMins = (new Date(thisTs).getTime() - new Date(prevTs).getTime()) / 60000;
       if (diffMins > slaMins) return 'breach';
     }
     return 'complete';
   }
+
+  // Step timestamp is missing. If the order is fully completed (courier step is set)
+  // it means this step happened but wasn't tracked individually (e.g. orders imported
+  // from Shopify only have start + end timestamps). Mark as complete so the pipeline
+  // doesn't show intermediate steps as "active" or "overdue" on a done order.
+  if (order.connectedToCourierAt) return 'complete';
 
   // Not yet completed — is it the active step?
   const isActive = stepIdx === 0 ? true : !!prevTs;
@@ -268,7 +276,9 @@ function dispatchClock(order: FulfillmentOrder): string {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function FulfillmentPage() {
-  const [brandId, setBrandId]   = useState<string | null>(null);
+  // Use the shared BrandContext so brand-switcher changes reflect here
+  // without a page reload and without cross-brand data contamination.
+  const { brandId } = useBrand();
   const [orders, setOrders]     = useState<FulfillmentOrder[]>([]);
   const [sla, setSla]           = useState<SLAConfig>({ step1Mins: 30, step2Mins: 60, step3Mins: 15, step4Mins: 30, step5Mins: 15 });
   const [loading, setLoading]   = useState(true);
@@ -277,26 +287,31 @@ export default function FulfillmentPage() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
+    if (!brandId) return;
+    let active = true;
+    setLoading(true);
+    setOrders([]);
+
     (async () => {
       try {
-        const brandsData = await api.get('/api/brands');
-        const id: string | undefined = brandsData?.brands?.[0]?.id;
-        if (!id) return;
-        setBrandId(id);
-
         const [ordersData, slaData] = await Promise.all([
-          api.get(`/api/fulfillment?brandId=${id}`),
-          api.get(`/api/fulfillment/sla?brandId=${id}`),
+          api.get(`/api/fulfillment?brandId=${brandId}`),
+          api.get(`/api/fulfillment/sla?brandId=${brandId}`),
         ]);
+        if (!active) return;
         setOrders(ordersData?.orders ?? []);
         if (slaData?.sla) setSla(slaData.sla);
       } catch (err) {
+        if (!active) return;
+        toast.error('Failed to load fulfillment data');
         console.error(err);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     })();
-  }, []);
+
+    return () => { active = false; };
+  }, [brandId]);
 
   // ─── Derived stats ──────────────────────────────────────────────────────────
 
@@ -357,9 +372,9 @@ export default function FulfillmentPage() {
       </div>
 
       {/* SLA Panel */}
-      {showSLA && brandId && (
+      {showSLA && brandId ? (
         <SLAPanel brandId={brandId} sla={sla} onSaved={s => { setSla(s); setShowSLA(false); }} />
-      )}
+      ) : null}
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">

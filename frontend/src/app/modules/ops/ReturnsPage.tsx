@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { RotateCcw, Search, RefreshCw, Download, ChevronDown } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import { getToken } from '../../context/AuthContext';
+import { useBrand } from '../../context/BrandContext';
 import { useDateRangeQuery } from '../../hooks/useDateRangeQuery';
 import { TableSkeleton, KPIGridSkeleton } from '../../components/Skeletons';
 import DateRangePicker from '../../components/DateRangePicker';
@@ -19,18 +19,9 @@ const STATUS_COLORS: Record<string, string> = {
 const CHART_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function ReturnsPage() {
-  const [brandId, setBrandId] = useState('');
+  const { brandId } = useBrand();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    fetch('/api/brands', { credentials: 'include', headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.brands?.[0]) setBrandId(d.brands[0].id); })
-      .catch(() => {});
-  }, []);
 
   const { data, loading, initialLoading, refetch } = useDateRangeQuery({
     url: brandId ? `/api/brands/${brandId}/returns` : null,

@@ -5,7 +5,8 @@ import {
   FileText, Package, RotateCcw, UserPlus, Shield,
 } from 'lucide-react';
 import { api } from '../../lib/apiClient';
-import { getToken, useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
+import { useBrand } from '../../context/BrandContext';
 import { toast } from '../../components/Toast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -107,8 +108,9 @@ const FILTER_TABS = [
 
 export default function TeamData() {
   const { user } = useAuth();
-  const [brandId, setBrandId] = useState('');
-  const [brandOwnerId, setBrandOwnerId] = useState('');
+  const { brandId, brand } = useBrand();
+  // ownerId from the active brand — used for permission checks below.
+  const brandOwnerId = brand?.ownerId ?? '';
   const [items, setItems] = useState<DataItem[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [members, setMembers] = useState<Member[]>([]);
@@ -119,21 +121,6 @@ export default function TeamData() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState('');
-
-  // Load brand on mount
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    fetch('/api/brands', { credentials: 'include', headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d?.brands?.[0]) {
-          setBrandId(d.brands[0].id);
-          setBrandOwnerId(d.brands[0].ownerId);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   const loadItems = useCallback(() => {
     if (!brandId) return;

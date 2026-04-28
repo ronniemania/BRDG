@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { ShoppingCart, Search, RefreshCw, Download, ChevronDown, TrendingUp, Truck, Clock, XCircle, FileText } from 'lucide-react';
-import { getToken } from '../../context/AuthContext';
 import { api } from '../../lib/apiClient';
+import { useBrand } from '../../context/BrandContext';
 import { useDateRangeQuery } from '../../hooks/useDateRangeQuery';
 import { OrdersSkeleton } from '../../components/Skeletons';
 import DateRangePicker from '../../components/DateRangePicker';
@@ -19,19 +19,12 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function OrdersPage() {
-  const [brandId, setBrandId] = useState('');
+  // Use the shared BrandContext — brand-switcher changes reflect immediately
+  // and the same brandId is used everywhere (no cross-brand contamination).
+  const { brandId } = useBrand();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [cancelling, setCancelling] = useState<string | null>(null);
-
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    fetch('/api/brands', { credentials: 'include', headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.brands?.[0]) setBrandId(d.brands[0].id); })
-      .catch(() => {});
-  }, []);
 
   const { data, loading, initialLoading, refetch } = useDateRangeQuery({
     url: brandId ? `/api/brands/${brandId}/orders` : null,

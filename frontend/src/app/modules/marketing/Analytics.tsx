@@ -7,6 +7,7 @@ import {
 import DateRangePicker from '../../components/DateRangePicker';
 import { useDateRange } from '../../context/DateRangeContext';
 import { getToken } from '../../context/AuthContext';
+import { useBrand } from '../../context/BrandContext';
 import { useDateRangeQueries } from '../../hooks/useDateRangeQuery';
 import { AnalyticsSkeleton } from '../../components/Skeletons';
 import { formatINR, formatINRCompact } from '../../lib/format';
@@ -42,17 +43,8 @@ function StatCard({ label, value, sub, trend, icon: Icon, color = 'green' }: any
 
 export default function Analytics() {
   const { range, preset } = useDateRange();
-  const [brandId, setBrandId] = useState('');
+  const { brandId } = useBrand();
   const [breachStats, setBreachStats] = useState<{ topFailures: any[]; trend: any[]; total: number } | null>(null);
-
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    fetch('/api/brands', { credentials: 'include', headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.brands?.[0]) setBrandId(d.brands[0].id); })
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (!brandId) return;

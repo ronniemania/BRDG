@@ -1,23 +1,14 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Lightbulb, RefreshCw, AlertTriangle, TrendingUp, TrendingDown, CheckCircle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { getToken } from '../../context/AuthContext';
+import { useBrand } from '../../context/BrandContext';
 import { useDateRangeQueries } from '../../hooks/useDateRangeQuery';
 import { ChartSkeleton, KPIGridSkeleton } from '../../components/Skeletons';
 import DateRangePicker from '../../components/DateRangePicker';
 import { formatINRCompact } from '../../lib/format';
 
 export default function Insights() {
-  const [brandId, setBrandId] = useState('');
-
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    fetch('/api/brands', { credentials: 'include', headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.brands?.[0]) setBrandId(d.brands[0].id); })
-      .catch(() => {});
-  }, []);
+  const { brandId } = useBrand();
 
   const urls = useMemo(() => ({
     kpis: brandId ? `/api/insights/kpis?brandId=${brandId}` : null,

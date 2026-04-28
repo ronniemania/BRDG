@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Users, Search, RefreshCw, Download, UserPlus, Clock } from 'lucide-react';
-import { getToken } from '../../context/AuthContext';
+import { useBrand } from '../../context/BrandContext';
 import { useDateRangeQuery } from '../../hooks/useDateRangeQuery';
 import { useDateRange } from '../../context/DateRangeContext';
 import { TableSkeleton, KPIGridSkeleton } from '../../components/Skeletons';
@@ -10,19 +10,10 @@ import { formatINR, formatINRCompact } from '../../lib/format';
 type Segment = 'all' | 'new' | 'dormant';
 
 export default function CustomersPage() {
-  const [brandId, setBrandId] = useState('');
+  const { brandId } = useBrand();
   const [search, setSearch] = useState('');
   const [segment, setSegment] = useState<Segment>('all');
   const { preset, params } = useDateRange();
-
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    fetch('/api/brands', { credentials: 'include', headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.brands?.[0]) setBrandId(d.brands[0].id); })
-      .catch(() => {});
-  }, []);
 
   // Fetch ALL customers (no date filter) — segmentation done client-side
   const { data, loading, initialLoading, refetch } = useDateRangeQuery({

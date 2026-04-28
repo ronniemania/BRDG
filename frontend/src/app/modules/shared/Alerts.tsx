@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Bell, RefreshCw, AlertTriangle, CheckCircle, Info, Package, MessageSquare, RotateCcw, ShoppingCart, CheckCheck } from 'lucide-react';
 import { getToken } from '../../context/AuthContext';
+import { useBrand } from '../../context/BrandContext';
 
 interface AlertItem {
   id: string;
@@ -58,21 +59,11 @@ function AlertCard({ alert, onMarkRead }: { alert: AlertItem; onMarkRead: (id: s
 }
 
 export default function Alerts() {
-  const [brandId, setBrandId] = useState('');
+  const { brandId } = useBrand();
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [unreadOnly, setUnreadOnly] = useState(false);
-
-  // Load first brand
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    fetch('/api/brands', { credentials: 'include', headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.brands?.[0]) setBrandId(d.brands[0].id); })
-      .catch(() => {});
-  }, []);
 
   const fetchAlerts = useCallback(async () => {
     if (!brandId) return;

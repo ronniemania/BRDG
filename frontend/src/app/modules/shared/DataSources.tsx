@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Database, Plus, RefreshCw, CheckCircle, AlertCircle, Clock, Trash2, Upload, Link2, Link2Off } from 'lucide-react';
 import { getToken } from '../../context/AuthContext';
+import { useBrand } from '../../context/BrandContext';
 import { api } from '../../lib/apiClient';
 import { toast } from '../../components/Toast';
 
@@ -175,7 +176,7 @@ function FreshdeskConnector({ brandId }: { brandId: string }) {
 }
 
 export default function DataSources() {
-  const [brandId, setBrandId] = useState('');
+  const { brandId } = useBrand();
   const [sources, setSources] = useState<any[]>([]);
   const [recentSyncs, setRecentSyncs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -190,15 +191,6 @@ export default function DataSources() {
   const [uploadResults, setUploadResults] = useState<any[]>([]);
   const [forceDataType, setForceDataType] = useState('auto');
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    fetch('/api/brands', { credentials: 'include', headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.brands?.[0]) setBrandId(d.brands[0].id); })
-      .catch(() => {});
-  }, []);
 
   const loadData = () => {
     if (!brandId) return;

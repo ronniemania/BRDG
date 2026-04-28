@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { MessageSquare, RefreshCw, Search, ChevronDown } from 'lucide-react';
-import { getToken } from '../../context/AuthContext';
+import { useBrand } from '../../context/BrandContext';
 import { useDateRangeQuery } from '../../hooks/useDateRangeQuery';
 import { TableSkeleton, KPIGridSkeleton } from '../../components/Skeletons';
 import DateRangePicker from '../../components/DateRangePicker';
@@ -20,18 +20,9 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 export default function Touchpoints() {
-  const [brandId, setBrandId] = useState('');
+  const { brandId } = useBrand();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    fetch('/api/brands', { credentials: 'include', headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.brands?.[0]) setBrandId(d.brands[0].id); })
-      .catch(() => {});
-  }, []);
 
   const { data, loading, initialLoading, refetch } = useDateRangeQuery({
     url: brandId ? `/api/ecommerce/tickets?brandId=${brandId}` : null,
