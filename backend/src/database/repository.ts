@@ -542,16 +542,16 @@ async function removeBrandMember(brandId: string, userId: string) {
   });
 }
 
-// Returns all brands the user owns OR is a member of
+// Returns all ACTIVE brands the user owns OR is a member of (archived brands excluded)
 async function findAccessibleBrands(userId: string) {
   const [owned, memberships] = await Promise.all([
-    prisma.brand.findMany({ where: { ownerId: userId }, orderBy: { createdAt: 'desc' } }),
+    prisma.brand.findMany({ where: { ownerId: userId, status: 'active' }, orderBy: { createdAt: 'desc' } }),
     prisma.brandMember.findMany({
       where: { userId },
       include: { brand: true },
     }),
   ]);
-  const memberBrands = memberships.map(m => m.brand);
+  const memberBrands = memberships.map(m => m.brand).filter(b => b.status === 'active');
   // Merge + deduplicate (owner can't also be listed as member)
   const map = new Map<string, (typeof owned)[number]>();
   for (const b of [...owned, ...memberBrands]) map.set(b.id, b);
