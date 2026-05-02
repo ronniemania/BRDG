@@ -110,6 +110,66 @@ deploy_file "backend/src/database/prismaClient.ts" \
 deploy_file "backend/src/routes/clawbot.ts" \
   "${VPS_ROOT}/backend/src/routes/clawbot.ts"
 
+deploy_file "backend/src/routes/health.ts" \
+  "${VPS_ROOT}/backend/src/routes/health.ts"
+
+deploy_file "backend/src/routes/webhooks.ts" \
+  "${VPS_ROOT}/backend/src/routes/webhooks.ts"
+
+deploy_file "backend/src/routes/agents.ts" \
+  "${VPS_ROOT}/backend/src/routes/agents.ts"
+
+deploy_file "backend/src/routes/etl.ts" \
+  "${VPS_ROOT}/backend/src/routes/etl.ts"
+
+deploy_file "backend/src/schedulers/adsScheduler.ts" \
+  "${VPS_ROOT}/backend/src/schedulers/adsScheduler.ts"
+
+deploy_file "backend/src/utils/logger.ts" \
+  "${VPS_ROOT}/backend/src/utils/logger.ts"
+
+deploy_file "backend/src/utils/errors.ts" \
+  "${VPS_ROOT}/backend/src/utils/errors.ts"
+
+deploy_file "backend/src/utils/rateLimit.ts" \
+  "${VPS_ROOT}/backend/src/utils/rateLimit.ts"
+
+deploy_file "backend/src/utils/encryption.ts" \
+  "${VPS_ROOT}/backend/src/utils/encryption.ts"
+
+deploy_file "backend/src/config/csrf.ts" \
+  "${VPS_ROOT}/backend/src/config/csrf.ts"
+
+deploy_file "backend/src/config/middleware.ts" \
+  "${VPS_ROOT}/backend/src/config/middleware.ts"
+
+deploy_file "backend/src/config/modelCatalog.ts" \
+  "${VPS_ROOT}/backend/src/config/modelCatalog.ts"
+
+deploy_file "backend/src/etl/types.ts" \
+  "${VPS_ROOT}/backend/src/etl/types.ts"
+
+deploy_file "backend/src/etl/pipeline.ts" \
+  "${VPS_ROOT}/backend/src/etl/pipeline.ts"
+
+deploy_file "backend/src/etl/audit.ts" \
+  "${VPS_ROOT}/backend/src/etl/audit.ts"
+
+deploy_file "backend/src/etl/watermarks.ts" \
+  "${VPS_ROOT}/backend/src/etl/watermarks.ts"
+
+deploy_file "backend/src/etl/deadletter.ts" \
+  "${VPS_ROOT}/backend/src/etl/deadletter.ts"
+
+deploy_file "backend/src/etl/rawStore.ts" \
+  "${VPS_ROOT}/backend/src/etl/rawStore.ts"
+
+deploy_file "backend/src/etl/connectors/ads.ts" \
+  "${VPS_ROOT}/backend/src/etl/connectors/ads.ts"
+
+deploy_file "backend/src/etl/connectors/freshdesk.ts" \
+  "${VPS_ROOT}/backend/src/etl/connectors/freshdesk.ts"
+
 # ─── 2. Backend — modified files ─────────────────────────────────────────────
 echo "[2/5] Deploying modified backend files..."
 
@@ -275,6 +335,9 @@ deploy_file "frontend/src/app/components/ReportManager.tsx" \
 
 deploy_file "frontend/src/app/components/Toast.tsx" \
   "${VPS_ROOT}/frontend/src/app/components/Toast.tsx"
+
+deploy_file "frontend/src/app/lib/format.ts" \
+  "${VPS_ROOT}/frontend/src/app/lib/format.ts"
 
 deploy_file "frontend/src/app/hooks/useDateRangeQuery.ts" \
   "${VPS_ROOT}/frontend/src/app/hooks/useDateRangeQuery.ts"

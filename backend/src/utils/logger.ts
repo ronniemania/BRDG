@@ -36,3 +36,15 @@ export const log = {
     error: (m: string, ctx?: Record<string, unknown>) => emit('error', m, { component, ...ctx }),
   }),
 };
+
+/**
+ * Backward-compat alias for older server-side files that import { logger }.
+ * New code should use `log` directly.
+ */
+export const logger = log;
+
+/** Backward-compat child logger factory. */
+export function childLogger(bindings: Record<string, unknown>) {
+  const component = String(bindings.component ?? bindings.module ?? 'unknown');
+  return log.scope(component);
+}
