@@ -273,6 +273,9 @@ deploy_file "frontend/src/app/components/ui/popover.tsx" \
 deploy_file "frontend/src/app/components/ReportManager.tsx" \
   "${VPS_ROOT}/frontend/src/app/components/ReportManager.tsx"
 
+deploy_file "frontend/src/app/components/Toast.tsx" \
+  "${VPS_ROOT}/frontend/src/app/components/Toast.tsx"
+
 deploy_file "frontend/src/app/hooks/useDateRangeQuery.ts" \
   "${VPS_ROOT}/frontend/src/app/hooks/useDateRangeQuery.ts"
 

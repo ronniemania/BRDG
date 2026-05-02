@@ -8,7 +8,7 @@
  * Supports:
  *   schedule = "daily"           → every day at scheduleHour:00
  *   schedule = "weekly"          → every scheduleDow at scheduleHour:00
- *   schedule = "custom" + cron   → minimal cron parser (5 fields, supports *, number, */N)
+ *   schedule = "custom" + cron   → minimal cron parser (5 fields, supports *, number, step/N)
  */
 
 import repository from '../database/repository';
