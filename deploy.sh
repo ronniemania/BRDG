@@ -29,7 +29,7 @@ deploy_file() {
   echo "  ✓ ${src}"
 }
 
-# ─── 1. Backend — new files ───────────────────────────────────────────────────
+# ─── 1. Backend — new / added files ──────────────────────────────────────────
 echo "[1/5] Deploying new backend files..."
 
 deploy_file "backend/src/routes/businessHealth.ts" \
@@ -50,7 +50,6 @@ deploy_file "backend/src/routes/fulfillment.ts" \
 deploy_file "backend/src/routes/search.ts" \
   "${VPS_ROOT}/backend/src/routes/search.ts"
 
-# Phase 4 — new backend routes & service
 deploy_file "backend/src/routes/sync.ts" \
   "${VPS_ROOT}/backend/src/routes/sync.ts"
 
@@ -60,22 +59,26 @@ deploy_file "backend/src/routes/rbac.ts" \
 deploy_file "backend/src/routes/deliveryProfiles.ts" \
   "${VPS_ROOT}/backend/src/routes/deliveryProfiles.ts"
 
-deploy_file "backend/src/routes/dashboard.ts" \
-  "${VPS_ROOT}/backend/src/routes/dashboard.ts"
+deploy_file "backend/src/routes/mailbox.ts" \
+  "${VPS_ROOT}/backend/src/routes/mailbox.ts"
 
-deploy_file "backend/src/services/deliveryProfileService.ts" \
-  "${VPS_ROOT}/backend/src/services/deliveryProfileService.ts"
-
-# Phase 5 — new backend route
 deploy_file "backend/src/routes/freshdesk.ts" \
   "${VPS_ROOT}/backend/src/routes/freshdesk.ts"
 
-# Phase 6 — Ads system
 deploy_file "backend/src/routes/ads.ts" \
   "${VPS_ROOT}/backend/src/routes/ads.ts"
 
 deploy_file "backend/src/routes/strategy.ts" \
   "${VPS_ROOT}/backend/src/routes/strategy.ts"
+
+deploy_file "backend/src/services/deliveryProfileService.ts" \
+  "${VPS_ROOT}/backend/src/services/deliveryProfileService.ts"
+
+deploy_file "backend/src/services/reportScheduler.ts" \
+  "${VPS_ROOT}/backend/src/services/reportScheduler.ts"
+
+deploy_file "backend/src/services/slackService.ts" \
+  "${VPS_ROOT}/backend/src/services/slackService.ts"
 
 deploy_file "backend/src/services/strategyService.ts" \
   "${VPS_ROOT}/backend/src/services/strategyService.ts"
@@ -95,15 +98,14 @@ deploy_file "backend/src/services/metaAdsService.ts" \
 deploy_file "backend/src/services/googleAdsService.ts" \
   "${VPS_ROOT}/backend/src/services/googleAdsService.ts"
 
+deploy_file "backend/src/services/clawbotService.ts" \
+  "${VPS_ROOT}/backend/src/services/clawbotService.ts"
+
 deploy_file "backend/src/database/adsRepository.ts" \
   "${VPS_ROOT}/backend/src/database/adsRepository.ts"
 
-# Phase 7 — Clawbot + UI Redesign
 deploy_file "backend/src/database/prismaClient.ts" \
   "${VPS_ROOT}/backend/src/database/prismaClient.ts"
-
-deploy_file "backend/src/services/clawbotService.ts" \
-  "${VPS_ROOT}/backend/src/services/clawbotService.ts"
 
 deploy_file "backend/src/routes/clawbot.ts" \
   "${VPS_ROOT}/backend/src/routes/clawbot.ts"
@@ -117,32 +119,14 @@ deploy_file "backend/prisma/schema.prisma" \
 deploy_file "backend/src/database/repository.ts" \
   "${VPS_ROOT}/backend/src/database/repository.ts"
 
+deploy_file "backend/src/etl/connectors/shopify.ts" \
+  "${VPS_ROOT}/backend/src/etl/connectors/shopify.ts"
+
+deploy_file "backend/src/routes/dashboard.ts" \
+  "${VPS_ROOT}/backend/src/routes/dashboard.ts"
+
 deploy_file "backend/src/routes/reports.ts" \
   "${VPS_ROOT}/backend/src/routes/reports.ts"
-
-deploy_file "backend/src/routes/insights.ts" \
-  "${VPS_ROOT}/backend/src/routes/insights.ts"
-
-deploy_file "backend/src/routes/businessHealth.ts" \
-  "${VPS_ROOT}/backend/src/routes/businessHealth.ts"
-
-deploy_file "backend/src/services/authService.ts" \
-  "${VPS_ROOT}/backend/src/services/authService.ts"
-
-deploy_file "backend/src/services/driveFolderService.ts" \
-  "${VPS_ROOT}/backend/src/services/driveFolderService.ts"
-
-deploy_file "backend/src/config/authMiddleware.ts" \
-  "${VPS_ROOT}/backend/src/config/authMiddleware.ts"
-
-deploy_file "backend/src/routes/auth.ts" \
-  "${VPS_ROOT}/backend/src/routes/auth.ts"
-
-deploy_file "backend/src/routes/admin.ts" \
-  "${VPS_ROOT}/backend/src/routes/admin.ts"
-
-deploy_file "backend/src/routes/brands.ts" \
-  "${VPS_ROOT}/backend/src/routes/brands.ts"
 
 deploy_file "backend/src/routes/insights.ts" \
   "${VPS_ROOT}/backend/src/routes/insights.ts"
@@ -153,9 +137,6 @@ deploy_file "backend/src/routes/ecommerce.ts" \
 deploy_file "backend/src/routes/inventory.ts" \
   "${VPS_ROOT}/backend/src/routes/inventory.ts"
 
-deploy_file "backend/src/routes/reports.ts" \
-  "${VPS_ROOT}/backend/src/routes/reports.ts"
-
 deploy_file "backend/src/routes/dataSources.ts" \
   "${VPS_ROOT}/backend/src/routes/dataSources.ts"
 
@@ -165,8 +146,29 @@ deploy_file "backend/src/routes/email.ts" \
 deploy_file "backend/src/routes/files.ts" \
   "${VPS_ROOT}/backend/src/routes/files.ts"
 
+deploy_file "backend/src/routes/auth.ts" \
+  "${VPS_ROOT}/backend/src/routes/auth.ts"
+
+deploy_file "backend/src/routes/admin.ts" \
+  "${VPS_ROOT}/backend/src/routes/admin.ts"
+
+deploy_file "backend/src/routes/brands.ts" \
+  "${VPS_ROOT}/backend/src/routes/brands.ts"
+
+deploy_file "backend/src/services/authService.ts" \
+  "${VPS_ROOT}/backend/src/services/authService.ts"
+
+deploy_file "backend/src/services/driveFolderService.ts" \
+  "${VPS_ROOT}/backend/src/services/driveFolderService.ts"
+
 deploy_file "backend/src/services/shopifyService.ts" \
   "${VPS_ROOT}/backend/src/services/shopifyService.ts"
+
+deploy_file "backend/src/config/authMiddleware.ts" \
+  "${VPS_ROOT}/backend/src/config/authMiddleware.ts"
+
+deploy_file "backend/src/config/constants.ts" \
+  "${VPS_ROOT}/backend/src/config/constants.ts"
 
 deploy_file "backend/src/server.ts" \
   "${VPS_ROOT}/backend/src/server.ts"
@@ -174,10 +176,7 @@ deploy_file "backend/src/server.ts" \
 deploy_file "backend/src/scheduler.ts" \
   "${VPS_ROOT}/backend/src/scheduler.ts"
 
-deploy_file "backend/src/config/constants.ts" \
-  "${VPS_ROOT}/backend/src/config/constants.ts"
-
-# ─── 3. Frontend — new & modified files ─────────────────────────────────────
+# ─── 3. Frontend — new & modified files ──────────────────────────────────────
 echo "[3/5] Deploying frontend files..."
 
 # Ensure remote dirs exist
@@ -191,65 +190,126 @@ $SSH "${VPS_USER}@${VPS_HOST}" "mkdir -p \
   ${VPS_ROOT}/frontend/src/app/context \
   ${VPS_ROOT}/frontend/src/app/pages"
 
-# Phase 4 — new frontend contexts
+# Contexts
 deploy_file "frontend/src/app/context/SyncContext.tsx" \
   "${VPS_ROOT}/frontend/src/app/context/SyncContext.tsx"
 
 deploy_file "frontend/src/app/context/RBACContext.tsx" \
   "${VPS_ROOT}/frontend/src/app/context/RBACContext.tsx"
 
-# Phase 4 — new frontend pages
+deploy_file "frontend/src/app/context/BrandContext.tsx" \
+  "${VPS_ROOT}/frontend/src/app/context/BrandContext.tsx"
+
+deploy_file "frontend/src/app/context/AuthContext.tsx" \
+  "${VPS_ROOT}/frontend/src/app/context/AuthContext.tsx"
+
+deploy_file "frontend/src/app/context/DateRangeContext.tsx" \
+  "${VPS_ROOT}/frontend/src/app/context/DateRangeContext.tsx"
+
+# Shared modules
 deploy_file "frontend/src/app/modules/shared/DeliveryProfiles.tsx" \
   "${VPS_ROOT}/frontend/src/app/modules/shared/DeliveryProfiles.tsx"
+
+deploy_file "frontend/src/app/modules/shared/Insights.tsx" \
+  "${VPS_ROOT}/frontend/src/app/modules/shared/Insights.tsx"
+
+deploy_file "frontend/src/app/modules/shared/DataSources.tsx" \
+  "${VPS_ROOT}/frontend/src/app/modules/shared/DataSources.tsx"
+
+deploy_file "frontend/src/app/modules/shared/Touchpoints.tsx" \
+  "${VPS_ROOT}/frontend/src/app/modules/shared/Touchpoints.tsx"
+
+deploy_file "frontend/src/app/modules/shared/Reports.tsx" \
+  "${VPS_ROOT}/frontend/src/app/modules/shared/Reports.tsx"
+
+deploy_file "frontend/src/app/modules/shared/BrandReports.tsx" \
+  "${VPS_ROOT}/frontend/src/app/modules/shared/BrandReports.tsx"
+
+deploy_file "frontend/src/app/modules/shared/Alerts.tsx" \
+  "${VPS_ROOT}/frontend/src/app/modules/shared/Alerts.tsx"
+
+deploy_file "frontend/src/app/modules/shared/TeamData.tsx" \
+  "${VPS_ROOT}/frontend/src/app/modules/shared/TeamData.tsx"
+
+# Marketing modules
+deploy_file "frontend/src/app/modules/marketing/Analytics.tsx" \
+  "${VPS_ROOT}/frontend/src/app/modules/marketing/Analytics.tsx"
+
+deploy_file "frontend/src/app/modules/marketing/MetricsPage.tsx" \
+  "${VPS_ROOT}/frontend/src/app/modules/marketing/MetricsPage.tsx"
+
+# Supply chain modules
+deploy_file "frontend/src/app/modules/supply-chain/InventoryPage.tsx" \
+  "${VPS_ROOT}/frontend/src/app/modules/supply-chain/InventoryPage.tsx"
+
+deploy_file "frontend/src/app/modules/supply-chain/OrdersPage.tsx" \
+  "${VPS_ROOT}/frontend/src/app/modules/supply-chain/OrdersPage.tsx"
+
+deploy_file "frontend/src/app/modules/supply-chain/FulfillmentPage.tsx" \
+  "${VPS_ROOT}/frontend/src/app/modules/supply-chain/FulfillmentPage.tsx"
+
+# Ops modules
+deploy_file "frontend/src/app/modules/ops/CustomersPage.tsx" \
+  "${VPS_ROOT}/frontend/src/app/modules/ops/CustomersPage.tsx"
+
+deploy_file "frontend/src/app/modules/ops/ReturnsPage.tsx" \
+  "${VPS_ROOT}/frontend/src/app/modules/ops/ReturnsPage.tsx"
+
+# ─── 4. Frontend — core files ─────────────────────────────────────────────────
+echo "[4/5] Deploying modified frontend core files..."
+
+deploy_file "frontend/src/app/lib/apiClient.ts" \
+  "${VPS_ROOT}/frontend/src/app/lib/apiClient.ts"
+
+deploy_file "frontend/src/app/components/DateRangePicker.tsx" \
+  "${VPS_ROOT}/frontend/src/app/components/DateRangePicker.tsx"
+
+deploy_file "frontend/src/app/components/ui/calendar.tsx" \
+  "${VPS_ROOT}/frontend/src/app/components/ui/calendar.tsx"
+
+deploy_file "frontend/src/app/components/ui/popover.tsx" \
+  "${VPS_ROOT}/frontend/src/app/components/ui/popover.tsx"
+
+deploy_file "frontend/src/app/components/ReportManager.tsx" \
+  "${VPS_ROOT}/frontend/src/app/components/ReportManager.tsx"
+
+deploy_file "frontend/src/app/hooks/useDateRangeQuery.ts" \
+  "${VPS_ROOT}/frontend/src/app/hooks/useDateRangeQuery.ts"
+
+deploy_file "frontend/src/app/hooks/useMetricSelection.ts" \
+  "${VPS_ROOT}/frontend/src/app/hooks/useMetricSelection.ts"
+
+deploy_file "frontend/src/app/ProtectedLayout.tsx" \
+  "${VPS_ROOT}/frontend/src/app/ProtectedLayout.tsx"
+
+deploy_file "frontend/src/app/pages/Dashboard.tsx" \
+  "${VPS_ROOT}/frontend/src/app/pages/Dashboard.tsx"
 
 deploy_file "frontend/src/app/pages/RBACSettings.tsx" \
   "${VPS_ROOT}/frontend/src/app/pages/RBACSettings.tsx"
 
-# Marketing
-deploy_file "frontend/src/app/modules/marketing/Analytics.tsx" \
-  "${VPS_ROOT}/frontend/src/app/modules/marketing/Analytics.tsx"
-deploy_file "frontend/src/app/modules/marketing/EcomMetricsPage.tsx" \
-  "${VPS_ROOT}/frontend/src/app/modules/marketing/EcomMetricsPage.tsx"
-deploy_file "frontend/src/app/modules/marketing/MetricsPage.tsx" \
-  "${VPS_ROOT}/frontend/src/app/modules/marketing/MetricsPage.tsx"
+deploy_file "frontend/src/app/pages/AdminPanel.tsx" \
+  "${VPS_ROOT}/frontend/src/app/pages/AdminPanel.tsx"
 
-# Supply chain
-deploy_file "frontend/src/app/modules/supply-chain/InventoryPage.tsx" \
-  "${VPS_ROOT}/frontend/src/app/modules/supply-chain/InventoryPage.tsx"
-deploy_file "frontend/src/app/lib/apiClient.ts" \
-  "${VPS_ROOT}/frontend/src/app/lib/apiClient.ts"
-deploy_file "frontend/src/app/modules/supply-chain/OrdersPage.tsx" \
-  "${VPS_ROOT}/frontend/src/app/modules/supply-chain/OrdersPage.tsx"
-deploy_file "frontend/src/app/modules/supply-chain/FulfillmentPage.tsx" \
-  "${VPS_ROOT}/frontend/src/app/modules/supply-chain/FulfillmentPage.tsx"
+deploy_file "frontend/src/app/pages/Settings.tsx" \
+  "${VPS_ROOT}/frontend/src/app/pages/Settings.tsx"
 
-# Ops
-deploy_file "frontend/src/app/modules/ops/CustomersPage.tsx" \
-  "${VPS_ROOT}/frontend/src/app/modules/ops/CustomersPage.tsx"
-deploy_file "frontend/src/app/modules/ops/ReturnsPage.tsx" \
-  "${VPS_ROOT}/frontend/src/app/modules/ops/ReturnsPage.tsx"
+deploy_file "frontend/src/app/pages/ModulesPage.tsx" \
+  "${VPS_ROOT}/frontend/src/app/pages/ModulesPage.tsx"
 
-# Shared
-deploy_file "frontend/src/app/modules/shared/Insights.tsx" \
-  "${VPS_ROOT}/frontend/src/app/modules/shared/Insights.tsx"
-deploy_file "frontend/src/app/modules/shared/DataSources.tsx" \
-  "${VPS_ROOT}/frontend/src/app/modules/shared/DataSources.tsx"
-deploy_file "frontend/src/app/modules/shared/Touchpoints.tsx" \
-  "${VPS_ROOT}/frontend/src/app/modules/shared/Touchpoints.tsx"
-deploy_file "frontend/src/app/modules/shared/Reports.tsx" \
-  "${VPS_ROOT}/frontend/src/app/modules/shared/Reports.tsx"
-deploy_file "frontend/src/app/modules/shared/BrandReports.tsx" \
-  "${VPS_ROOT}/frontend/src/app/modules/shared/BrandReports.tsx"
-deploy_file "frontend/src/app/modules/shared/Alerts.tsx" \
-  "${VPS_ROOT}/frontend/src/app/modules/shared/Alerts.tsx"
-deploy_file "frontend/src/app/modules/shared/TeamData.tsx" \
-  "${VPS_ROOT}/frontend/src/app/modules/shared/TeamData.tsx"
+deploy_file "frontend/src/app/pages/Login.tsx" \
+  "${VPS_ROOT}/frontend/src/app/pages/Login.tsx"
 
-# Phase 5 — modified frontend files
-deploy_file "frontend/src/app/components/ReportManager.tsx" \
-  "${VPS_ROOT}/frontend/src/app/components/ReportManager.tsx"
+deploy_file "frontend/src/app/pages/Signup.tsx" \
+  "${VPS_ROOT}/frontend/src/app/pages/Signup.tsx"
 
-# Phase 7 — Ads pages + Clawbot
+deploy_file "frontend/src/app/routes.tsx" \
+  "${VPS_ROOT}/frontend/src/app/routes.tsx"
+
+deploy_file "frontend/src/app/App.tsx" \
+  "${VPS_ROOT}/frontend/src/app/App.tsx"
+
+# Ads & Clawbot pages
 $SSH "${VPS_USER}@${VPS_HOST}" "mkdir -p \
   ${VPS_ROOT}/frontend/src/app/store \
   ${VPS_ROOT}/frontend/src/app/components/ads"
@@ -286,61 +346,6 @@ deploy_file "frontend/src/app/pages/AdCreator.tsx" \
 
 deploy_file "frontend/src/app/pages/ClawbotPage.tsx" \
   "${VPS_ROOT}/frontend/src/app/pages/ClawbotPage.tsx"
-
-# ─── 4. Frontend — modified core files ───────────────────────────────────────
-echo "[4/5] Deploying modified frontend core files..."
-
-deploy_file "frontend/src/app/components/DateRangePicker.tsx" \
-  "${VPS_ROOT}/frontend/src/app/components/DateRangePicker.tsx"
-
-deploy_file "frontend/src/app/components/ui/calendar.tsx" \
-  "${VPS_ROOT}/frontend/src/app/components/ui/calendar.tsx"
-
-deploy_file "frontend/src/app/components/ui/popover.tsx" \
-  "${VPS_ROOT}/frontend/src/app/components/ui/popover.tsx"
-
-deploy_file "frontend/src/app/hooks/useDateRangeQuery.ts" \
-  "${VPS_ROOT}/frontend/src/app/hooks/useDateRangeQuery.ts"
-
-deploy_file "frontend/src/app/hooks/useMetricSelection.ts" \
-  "${VPS_ROOT}/frontend/src/app/hooks/useMetricSelection.ts"
-
-deploy_file "frontend/src/app/context/AuthContext.tsx" \
-  "${VPS_ROOT}/frontend/src/app/context/AuthContext.tsx"
-
-deploy_file "frontend/src/app/context/BrandContext.tsx" \
-  "${VPS_ROOT}/frontend/src/app/context/BrandContext.tsx"
-
-deploy_file "frontend/src/app/context/DateRangeContext.tsx" \
-  "${VPS_ROOT}/frontend/src/app/context/DateRangeContext.tsx"
-
-deploy_file "frontend/src/app/ProtectedLayout.tsx" \
-  "${VPS_ROOT}/frontend/src/app/ProtectedLayout.tsx"
-
-deploy_file "frontend/src/app/pages/Dashboard.tsx" \
-  "${VPS_ROOT}/frontend/src/app/pages/Dashboard.tsx"
-
-deploy_file "frontend/src/app/routes.tsx" \
-  "${VPS_ROOT}/frontend/src/app/routes.tsx"
-
-deploy_file "frontend/src/app/App.tsx" \
-  "${VPS_ROOT}/frontend/src/app/App.tsx"
-
-deploy_file "frontend/src/app/pages/AdminPanel.tsx" \
-  "${VPS_ROOT}/frontend/src/app/pages/AdminPanel.tsx"
-
-deploy_file "frontend/src/app/pages/Settings.tsx" \
-  "${VPS_ROOT}/frontend/src/app/pages/Settings.tsx"
-
-deploy_file "frontend/src/app/pages/ModulesPage.tsx" \
-  "${VPS_ROOT}/frontend/src/app/pages/ModulesPage.tsx"
-
-# Phase 7 — redesigned auth + nav
-deploy_file "frontend/src/app/pages/Login.tsx" \
-  "${VPS_ROOT}/frontend/src/app/pages/Login.tsx"
-
-deploy_file "frontend/src/app/pages/Signup.tsx" \
-  "${VPS_ROOT}/frontend/src/app/pages/Signup.tsx"
 
 # ─── 5. Remote post-deploy steps ─────────────────────────────────────────────
 echo "[5/5] Running post-deploy steps on VPS..."
@@ -405,14 +410,12 @@ CREATE TABLE IF NOT EXISTS fulfillment_sla_config (
   CONSTRAINT fulfillment_sla_config_brandid_key UNIQUE("brandId")
 );
 
--- ─── Phase 4 (idempotent) ──────────────────────────────────────────────────
+-- ─── Phase 4 (idempotent) ─────────────────────────────────────────────────────
 
--- RBAC: team and department attributes on brand members
 ALTER TABLE brand_members
   ADD COLUMN IF NOT EXISTS team        TEXT,
   ADD COLUMN IF NOT EXISTS department  TEXT;
 
--- RBAC policies
 CREATE TABLE IF NOT EXISTS rbac_policies (
   id               TEXT PRIMARY KEY,
   "brandId"        TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
@@ -424,7 +427,7 @@ CREATE TABLE IF NOT EXISTS rbac_policies (
   "updatedAt"      TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Delivery profiles
+-- Delivery profiles base table
 CREATE TABLE IF NOT EXISTS delivery_profiles (
   id               TEXT PRIMARY KEY,
   "brandId"        TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
@@ -440,18 +443,70 @@ CREATE TABLE IF NOT EXISTS delivery_profiles (
   "createdAt"      TIMESTAMP NOT NULL DEFAULT NOW(),
   "updatedAt"      TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- Delivery profiles — extended columns (idempotent; safe to run on both old and new tables)
+ALTER TABLE delivery_profiles
+  ADD COLUMN IF NOT EXISTS "scheduleCron"         TEXT,
+  ADD COLUMN IF NOT EXISTS "scheduleHour"         INTEGER     NOT NULL DEFAULT 7,
+  ADD COLUMN IF NOT EXISTS "scheduleDow"          INTEGER     NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS "dateRange"            TEXT        NOT NULL DEFAULT 'today',
+  ADD COLUMN IF NOT EXISTS "isShared"             BOOLEAN     NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS "createdBy"            TEXT,
+  ADD COLUMN IF NOT EXISTS "createdByEmail"       TEXT,
+  ADD COLUMN IF NOT EXISTS "mailProvider"         TEXT        NOT NULL DEFAULT 'auto',
+  ADD COLUMN IF NOT EXISTS "lastRunAt"            TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS "nextRunAt"            TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS "lastRunStatus"        TEXT,
+  ADD COLUMN IF NOT EXISTS "lastRunError"         TEXT,
+  ADD COLUMN IF NOT EXISTS "consecutiveFailures"  INTEGER     NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS "paused"               BOOLEAN     NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS "slackWebhookUrl"      TEXT;
+
+CREATE INDEX IF NOT EXISTS delivery_profiles_nextruna_idx ON delivery_profiles("nextRunAt");
+CREATE INDEX IF NOT EXISTS delivery_profiles_isshared_idx ON delivery_profiles("isShared");
+
+-- Mailbox configs (shared OAuth/SMTP sender mailboxes)
+CREATE TABLE IF NOT EXISTS mailbox_configs (
+  id              TEXT PRIMARY KEY,
+  provider        TEXT        NOT NULL,
+  "displayName"   TEXT        NOT NULL DEFAULT '',
+  "emailAddress"  TEXT        NOT NULL,
+  "isDefault"     BOOLEAN     NOT NULL DEFAULT false,
+  "isShared"      BOOLEAN     NOT NULL DEFAULT true,
+  "accessToken"   TEXT,
+  "refreshToken"  TEXT,
+  "expiresAt"     TIMESTAMP,
+  "tenantId"      TEXT,
+  scopes          TEXT,
+  "smtpHost"      TEXT,
+  "smtpPort"      INTEGER,
+  "smtpUser"      TEXT,
+  "smtpPassword"  TEXT,
+  "smtpSecure"    BOOLEAN     NOT NULL DEFAULT true,
+  "createdById"   TEXT,
+  status          TEXT        NOT NULL DEFAULT 'connected',
+  "lastError"     TEXT,
+  "createdAt"     TIMESTAMP   NOT NULL DEFAULT NOW(),
+  "updatedAt"     TIMESTAMP   NOT NULL DEFAULT NOW()
+);
+
+-- Orders — extended columns (idempotent)
+ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS "sourceOrderNumber" TEXT,
+  ADD COLUMN IF NOT EXISTS "customerEmail"     TEXT;
+
 -- ─── Phase 6 — Ads system (idempotent) ───────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS ads_accounts (
-  id            TEXT PRIMARY KEY,
-  "brandId"     TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
-  platform      TEXT NOT NULL,
-  "accountId"   TEXT NOT NULL,
-  "accountName" TEXT NOT NULL,
+  id               TEXT PRIMARY KEY,
+  "brandId"        TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+  platform         TEXT NOT NULL,
+  "accountId"      TEXT NOT NULL,
+  "accountName"    TEXT NOT NULL,
   "encryptedCreds" TEXT NOT NULL DEFAULT '',
-  status        TEXT NOT NULL DEFAULT 'active',
-  "createdAt"   TIMESTAMP NOT NULL DEFAULT NOW(),
-  "updatedAt"   TIMESTAMP NOT NULL DEFAULT NOW()
+  status           TEXT NOT NULL DEFAULT 'active',
+  "createdAt"      TIMESTAMP NOT NULL DEFAULT NOW(),
+  "updatedAt"      TIMESTAMP NOT NULL DEFAULT NOW()
 );
 CREATE UNIQUE INDEX IF NOT EXISTS ads_accounts_brandid_platform_accountid ON ads_accounts("brandId", platform, "accountId");
 
@@ -492,18 +547,18 @@ CREATE TABLE IF NOT EXISTS ads (
 );
 
 CREATE TABLE IF NOT EXISTS performance_metrics (
-  id              TEXT PRIMARY KEY,
-  "campaignId"    TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
-  "externalId"    TEXT NOT NULL,
-  "dateKey"       TEXT NOT NULL,
-  impressions     INTEGER NOT NULL DEFAULT 0,
-  clicks          INTEGER NOT NULL DEFAULT 0,
-  spend           DECIMAL(10,2) NOT NULL DEFAULT 0,
-  conversions     INTEGER NOT NULL DEFAULT 0,
-  revenue         DECIMAL(10,2) NOT NULL DEFAULT 0,
-  "avgFrequency"  DECIMAL(5,2) NOT NULL DEFAULT 0,
-  "createdAt"     TIMESTAMP NOT NULL DEFAULT NOW(),
-  "updatedAt"     TIMESTAMP NOT NULL DEFAULT NOW()
+  id             TEXT PRIMARY KEY,
+  "campaignId"   TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+  "externalId"   TEXT NOT NULL,
+  "dateKey"      TEXT NOT NULL,
+  impressions    INTEGER     NOT NULL DEFAULT 0,
+  clicks         INTEGER     NOT NULL DEFAULT 0,
+  spend          DECIMAL(10,2) NOT NULL DEFAULT 0,
+  conversions    INTEGER     NOT NULL DEFAULT 0,
+  revenue        DECIMAL(10,2) NOT NULL DEFAULT 0,
+  "avgFrequency" DECIMAL(5,2) NOT NULL DEFAULT 0,
+  "createdAt"    TIMESTAMP   NOT NULL DEFAULT NOW(),
+  "updatedAt"    TIMESTAMP   NOT NULL DEFAULT NOW()
 );
 CREATE UNIQUE INDEX IF NOT EXISTS perf_metrics_campaign_date ON performance_metrics("campaignId", "dateKey");
 
@@ -513,43 +568,43 @@ CREATE TABLE IF NOT EXISTS action_logs (
   "adsAccountId" TEXT,
   "agentId"      TEXT NOT NULL,
   "actionType"   TEXT NOT NULL,
-  payload        JSONB NOT NULL DEFAULT '{}',
-  status         TEXT NOT NULL DEFAULT 'AWAITING_HUMAN',
+  payload        JSONB       NOT NULL DEFAULT '{}',
+  status         TEXT        NOT NULL DEFAULT 'AWAITING_HUMAN',
   "approvedBy"   TEXT,
   "executedAt"   TIMESTAMP,
   result         JSONB,
   error          TEXT,
   confidence     DECIMAL(4,3),
   reasoning      TEXT,
-  "createdAt"    TIMESTAMP NOT NULL DEFAULT NOW(),
-  "updatedAt"    TIMESTAMP NOT NULL DEFAULT NOW()
+  "createdAt"    TIMESTAMP   NOT NULL DEFAULT NOW(),
+  "updatedAt"    TIMESTAMP   NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS agent_decisions (
-  id           TEXT PRIMARY KEY,
-  "brandId"    TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+  id            TEXT PRIMARY KEY,
+  "brandId"     TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
   "actionLogId" TEXT REFERENCES action_logs(id),
-  "agentId"    TEXT NOT NULL,
-  decision     TEXT NOT NULL,
-  reasoning    TEXT,
-  confidence   DECIMAL(4,3),
-  "inputData"  JSONB,
-  "outputData" JSONB,
-  "createdAt"  TIMESTAMP NOT NULL DEFAULT NOW()
+  "agentId"     TEXT NOT NULL,
+  decision      TEXT NOT NULL,
+  reasoning     TEXT,
+  confidence    DECIMAL(4,3),
+  "inputData"   JSONB,
+  "outputData"  JSONB,
+  "createdAt"   TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS ads_agent_configs (
   id                       TEXT PRIMARY KEY,
   "adsAccountId"           TEXT NOT NULL UNIQUE REFERENCES ads_accounts(id) ON DELETE CASCADE,
-  "manualApprovalMode"     BOOLEAN NOT NULL DEFAULT false,
+  "manualApprovalMode"     BOOLEAN     NOT NULL DEFAULT false,
   "confidenceThreshold"    DECIMAL(4,3) NOT NULL DEFAULT 0.75,
-  "maxDailyBudgetIncrPct"  INTEGER NOT NULL DEFAULT 20,
-  "minSpendThresholdCents" INTEGER NOT NULL DEFAULT 5000,
-  "cooldownHours"          INTEGER NOT NULL DEFAULT 24,
-  "allowedActions"         JSONB NOT NULL DEFAULT '[]',
-  "blockedCampaignIds"     JSONB NOT NULL DEFAULT '[]',
-  "createdAt"              TIMESTAMP NOT NULL DEFAULT NOW(),
-  "updatedAt"              TIMESTAMP NOT NULL DEFAULT NOW()
+  "maxDailyBudgetIncrPct"  INTEGER     NOT NULL DEFAULT 20,
+  "minSpendThresholdCents" INTEGER     NOT NULL DEFAULT 5000,
+  "cooldownHours"          INTEGER     NOT NULL DEFAULT 24,
+  "allowedActions"         JSONB       NOT NULL DEFAULT '[]',
+  "blockedCampaignIds"     JSONB       NOT NULL DEFAULT '[]',
+  "createdAt"              TIMESTAMP   NOT NULL DEFAULT NOW(),
+  "updatedAt"              TIMESTAMP   NOT NULL DEFAULT NOW()
 );
 
 -- ─── Phase 7 — Clawbot (idempotent) ───────────────────────────────────────────
@@ -557,47 +612,47 @@ CREATE TABLE IF NOT EXISTS ads_agent_configs (
 CREATE TABLE IF NOT EXISTS brand_strategies (
   id               TEXT PRIMARY KEY,
   "brandId"        TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
-  version          INTEGER NOT NULL DEFAULT 1,
-  title            TEXT NOT NULL,
-  objective        TEXT NOT NULL,
-  "targetAudience" JSONB NOT NULL DEFAULT '{}',
-  "budgetRec"      JSONB NOT NULL DEFAULT '{}',
-  channels         JSONB NOT NULL DEFAULT '{}',
-  "keyMessages"    JSONB NOT NULL DEFAULT '[]',
-  kpis             JSONB NOT NULL DEFAULT '{}',
-  "rawInput"       JSONB NOT NULL DEFAULT '{}',
-  "createdAt"      TIMESTAMP NOT NULL DEFAULT NOW(),
-  "updatedAt"      TIMESTAMP NOT NULL DEFAULT NOW()
+  version          INTEGER     NOT NULL DEFAULT 1,
+  title            TEXT        NOT NULL,
+  objective        TEXT        NOT NULL,
+  "targetAudience" JSONB       NOT NULL DEFAULT '{}',
+  "budgetRec"      JSONB       NOT NULL DEFAULT '{}',
+  channels         JSONB       NOT NULL DEFAULT '{}',
+  "keyMessages"    JSONB       NOT NULL DEFAULT '[]',
+  kpis             JSONB       NOT NULL DEFAULT '{}',
+  "rawInput"       JSONB       NOT NULL DEFAULT '{}',
+  "createdAt"      TIMESTAMP   NOT NULL DEFAULT NOW(),
+  "updatedAt"      TIMESTAMP   NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS campaign_briefs (
   id                  TEXT PRIMARY KEY,
   "brandId"           TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
   "strategyId"        TEXT REFERENCES brand_strategies(id),
-  name                TEXT NOT NULL,
-  platform            TEXT NOT NULL DEFAULT 'META',
-  objective           TEXT NOT NULL,
+  name                TEXT        NOT NULL,
+  platform            TEXT        NOT NULL DEFAULT 'META',
+  objective           TEXT        NOT NULL,
   budget              DECIMAL(10,2) NOT NULL DEFAULT 0,
   "startDate"         TIMESTAMP,
   "endDate"           TIMESTAMP,
-  "targetAudience"    JSONB NOT NULL DEFAULT '{}',
-  "creativeDirection" JSONB NOT NULL DEFAULT '{}',
-  status              TEXT NOT NULL DEFAULT 'DRAFT',
-  "createdAt"         TIMESTAMP NOT NULL DEFAULT NOW(),
-  "updatedAt"         TIMESTAMP NOT NULL DEFAULT NOW()
+  "targetAudience"    JSONB       NOT NULL DEFAULT '{}',
+  "creativeDirection" JSONB       NOT NULL DEFAULT '{}',
+  status              TEXT        NOT NULL DEFAULT 'DRAFT',
+  "createdAt"         TIMESTAMP   NOT NULL DEFAULT NOW(),
+  "updatedAt"         TIMESTAMP   NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS api_cost_logs (
-  id              TEXT PRIMARY KEY,
-  "brandId"       TEXT REFERENCES brands(id),
-  provider        TEXT NOT NULL,
-  model           TEXT NOT NULL,
-  operation       TEXT NOT NULL,
-  "inputTokens"   INTEGER NOT NULL DEFAULT 0,
-  "outputTokens"  INTEGER NOT NULL DEFAULT 0,
-  "costUsd"       DECIMAL(10,6) NOT NULL DEFAULT 0,
-  metadata        JSONB,
-  "createdAt"     TIMESTAMP NOT NULL DEFAULT NOW()
+  id             TEXT PRIMARY KEY,
+  "brandId"      TEXT REFERENCES brands(id),
+  provider       TEXT        NOT NULL,
+  model          TEXT        NOT NULL,
+  operation      TEXT        NOT NULL,
+  "inputTokens"  INTEGER     NOT NULL DEFAULT 0,
+  "outputTokens" INTEGER     NOT NULL DEFAULT 0,
+  "costUsd"      DECIMAL(10,6) NOT NULL DEFAULT 0,
+  metadata       JSONB,
+  "createdAt"    TIMESTAMP   NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS api_cost_logs_brandid_createdat ON api_cost_logs("brandId", "createdAt");
 
