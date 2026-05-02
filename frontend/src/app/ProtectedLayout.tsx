@@ -274,29 +274,6 @@ function Sidebar({ collapsed, onToggle, unreadAlerts, pendingTeamData }: Sidebar
         )}
       </div>
 
-      {/* Boss dept switcher */}
-      {isBoss && !collapsed && (
-        <div className="px-3 pt-3 pb-2 border-b border-[#e8eaed] flex-shrink-0">
-          <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-widest px-1 mb-2 flex items-center gap-1">
-            <Crown className="w-3 h-3" /> View as
-          </p>
-          <div className="flex flex-wrap gap-1">
-            {DEPT_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setDeptView(opt.value)}
-                className={`text-[10px] px-2.5 py-1 rounded-full font-medium transition-colors ${
-                  deptView === opt.value
-                    ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-200'
-                    : 'bg-[#f8f9fa] text-[#5f6368] hover:bg-[#f1f3f4]'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2" style={{ paddingLeft: collapsed ? 8 : 12, paddingRight: collapsed ? 8 : 12 }}>

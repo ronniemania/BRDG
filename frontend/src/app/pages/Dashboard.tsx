@@ -479,7 +479,6 @@ export default function Dashboard() {
 
         {/* Holistic view — replaces isolated brand content */}
         {isHolistic && <HolisticDashboard />}
-        <AgentUsageCards brandId={brandId} isHolistic={isHolistic} />
 
         {/* Isolated view content */}
         {!isHolistic && (
